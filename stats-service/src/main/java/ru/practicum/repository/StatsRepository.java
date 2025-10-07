@@ -8,7 +8,7 @@ import ru.practicum.model.EndpointHitEntity;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface StatsRepository  extends JpaRepository<EndpointHitEntity,Long> {
+public interface StatsRepository extends JpaRepository<EndpointHitEntity, Long> {
 
     @Query("SELECT new ru.practicum.dto.ViewStatsDto(e.app, e.uri, COUNT(e)) " +
             "FROM EndpointHitEntity e " +

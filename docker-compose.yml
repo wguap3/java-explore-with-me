@@ -1,6 +1,6 @@
 services:
   stats-server:
-    build: stats-service
+    build: ./stats-service/stats-server
     ports:
       - "9090:9090"
     environment:

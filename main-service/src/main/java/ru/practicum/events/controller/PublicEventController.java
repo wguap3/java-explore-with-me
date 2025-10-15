@@ -42,7 +42,6 @@ public class PublicEventController {
     }
 
 
-
     @GetMapping("/events/{id}")
     public EventFullDto getPublicEventById(
             @PathVariable Long id,

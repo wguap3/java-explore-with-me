@@ -181,7 +181,7 @@ public class EventServiceImpl implements EventService {
         List<EventStatus> statusList = List.of(EventStatus.PUBLISHED);
 
         LocalDateTime start = parseDate(rangeStart);
-        LocalDateTime end   = parseDate(rangeEnd);
+        LocalDateTime end = parseDate(rangeEnd);
         if (start == null) start = LocalDateTime.now();
         if (end == null) end = LocalDateTime.now().plusYears(100);
 

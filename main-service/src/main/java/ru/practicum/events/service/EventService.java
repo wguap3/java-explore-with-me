@@ -5,7 +5,6 @@ import ru.practicum.events.model.Event;
 import ru.practicum.requests.dto.ParticipationRequestDto;
 
 import java.util.List;
-import java.util.Map;
 
 public interface EventService {
     EventResponseDto addEvent(Long userId, NewEventDto newEventDto);

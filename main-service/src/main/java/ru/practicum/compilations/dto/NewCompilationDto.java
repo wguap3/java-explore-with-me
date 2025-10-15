@@ -12,9 +12,9 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class NewCompilationDto {
-    @NotBlank(message = "Название подборки не может быть пустым")
-    @Size(max = 50, message = "Название подборки не может превышать 50 символов")
     private Set<Long> events;
     private Boolean pinned = false;
+    @Size(max = 50, message = "Название подборки не может превышать 50 символов")
+    @NotBlank(message = "Название подборки не может быть пустым")
     private String title;
 }

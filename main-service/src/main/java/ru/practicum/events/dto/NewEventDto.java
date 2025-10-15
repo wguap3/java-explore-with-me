@@ -1,5 +1,6 @@
 package ru.practicum.events.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,6 +21,7 @@ public class NewEventDto {
     private String description;
     @NotNull
     private Long category;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @NotNull
     private LocalDateTime eventDate;
     @NotNull

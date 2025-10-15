@@ -67,11 +67,6 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void deleteCategory(Long categoryId) {
-        boolean hasEvents = categoryRepository.existsById(categoryId);
-        if (hasEvents) {
-            throw new ConflictException("Невозможно удалить категорию: к ней привязаны события");
-        }
-
         categoryRepository.deleteById(categoryId);
     }
 

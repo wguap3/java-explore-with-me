@@ -64,6 +64,8 @@ public interface EventMapper {
     @Mapping(source = "category", target = "category")
     @Mapping(source = "initiator", target = "initiator")
     @Mapping(target = "location", expression = "java(new LocationDto(event.getLat(), event.getLon()))")
-    EventResponseDto toResponseDto(Event event);;
+    EventResponseDto toResponseDto(Event event);
+
+    ;
 
 }

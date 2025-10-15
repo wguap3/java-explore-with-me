@@ -18,27 +18,27 @@ public class PublicEventController {
     private final EventService eventService;
     private final EventStatsService eventStatsService;
 
-    @GetMapping("/events")
-    public List<EventShortDto> getPublicEvents(
+    @GetMapping
+    public <List<EventShortDto>>
+
+    getPublicEvents(
             @RequestParam(required = false) String text,
             @RequestParam(required = false) List<Long> categories,
             @RequestParam(required = false) Boolean paid,
             @RequestParam(required = false) String rangeStart,
             @RequestParam(required = false) String rangeEnd,
             @RequestParam(required = false) Boolean onlyAvailable,
-            @RequestParam(required = false) String sort,
+            @RequestParam(defaultValue = "EVENT_DATE") String sort,
             @RequestParam(defaultValue = "0") int from,
             @RequestParam(defaultValue = "10") int size,
             HttpServletRequest request
     ) {
-        String ip = request.getRemoteAddr();
-        String uri = request.getRequestURI();
-
-        eventStatsService.registerView(uri, ip);
-
-        return eventService.getPublicEvents(
-                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size
+        // Передаём request в сервис для регистрации статистики
+        List<EventShortDto> events = eventService.getPublicEvents(
+                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size, request
         );
+
+        return ResponseEntity.ok(events);
     }
 
 

@@ -1,8 +1,11 @@
 package ru.practicum.events.service;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import ru.practicum.categories.model.Category;
 import ru.practicum.categories.service.CategoryService;
@@ -11,13 +14,12 @@ import ru.practicum.events.mapper.EventMapper;
 import ru.practicum.events.model.Event;
 import ru.practicum.events.model.EventStatus;
 import ru.practicum.events.repository.EventRepository;
-import ru.practicum.exception.BadRequestException;
-import ru.practicum.exception.ForbiddenException;
-import ru.practicum.exception.NotFoundException;
+import ru.practicum.exception.*;
 import ru.practicum.requests.dto.ParticipationRequestDto;
 import ru.practicum.requests.mapper.ParticipationRequestMapper;
 import ru.practicum.requests.model.ParticipationRequest;
 import ru.practicum.requests.model.RequestStatus;
+import ru.practicum.requests.repository.ParticipationRequestRepository;
 import ru.practicum.requests.service.ParticipationRequestService;
 import ru.practicum.user.model.User;
 import ru.practicum.user.service.UserService;
@@ -26,7 +28,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,6 +42,7 @@ public class EventServiceImpl implements EventService {
     private final EventStatsService eventStatsService;
     private final ParticipationRequestService requestService;
     private final ParticipationRequestMapper participationRequestMapper;
+    private final ParticipationRequestRepository participationRequestRepository;
 
     @Override
     public EventResponseDto addEvent(Long userId, NewEventDto newEventDto) {
@@ -166,7 +168,6 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found"));
     }
 
-
     @Override
     public List<EventShortDto> getPublicEvents(String text,
                                                List<Long> categories,
@@ -176,32 +177,68 @@ public class EventServiceImpl implements EventService {
                                                Boolean onlyAvailable,
                                                String sort,
                                                int from,
-                                               int size) {
+                                               int size,
+                                               HttpServletRequest request) {
 
-        List<EventStatus> statusList = List.of(EventStatus.PUBLISHED);
 
+        String uri = request.getRequestURI();
+        String ip = request.getRemoteAddr();
+        eventStatsService.registerView(uri, ip);
+
+        LocalDateTime now = LocalDateTime.now();
         LocalDateTime start = parseDate(rangeStart);
         LocalDateTime end = parseDate(rangeEnd);
-        if (start == null) start = LocalDateTime.now();
-        if (end == null) end = LocalDateTime.now().plusYears(100);
 
-        PageRequest page;
-        if ("EVENT_DATE".equalsIgnoreCase(sort)) {
-            page = PageRequest.of(from / size, size, Sort.by("eventDate").ascending());
-        } else {
-            page = PageRequest.of(from / size, size);
+        if (start == null) start = now;
+        if (end == null) end = now.plusYears(100);
+        if (end.isBefore(start)) {
+            throw new UncorrectedParametersException("Дата окончания не может быть раньше даты начала");
         }
 
-        List<Event> events = eventRepository.findPublicEvents(
-                text != null ? text.toLowerCase() : null,
-                categories,
-                paid,
-                statusList,
-                start,
-                end,
-                onlyAvailable != null && onlyAvailable,
-                page
+        Sort sorting = Sort.unsorted();
+        if ("EVENT_DATE".equalsIgnoreCase(sort)) {
+            sorting = Sort.by("eventDate").ascending();
+        } else if ("VIEWS".equalsIgnoreCase(sort)) {
+            sorting = Sort.by("views").descending();
+        }
+        Pageable pageable = PageRequest.of(from / size, size, sorting);
+
+
+        Specification<Event> spec = Specification.where(
+                (root, query, cb) -> cb.equal(root.get("eventStatus"), EventStatus.PUBLISHED)
         );
+
+        if (text != null && !text.isBlank()) {
+            String lower = text.toLowerCase();
+            spec = spec.and((root, query, cb) ->
+                    cb.or(
+                            cb.like(cb.lower(root.get("annotation")), "%" + lower + "%"),
+                            cb.like(cb.lower(root.get("description")), "%" + lower + "%")
+                    ));
+        }
+
+        if (categories != null && !categories.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                    root.get("category").get("id").in(categories));
+        }
+
+        if (paid != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("paid"), paid));
+        }
+
+        LocalDateTime finalStart = start;
+        LocalDateTime finalEnd = end;
+        spec = spec.and((root, query, cb) ->
+                cb.between(root.get("eventDate"), finalStart, finalEnd));
+
+        if (onlyAvailable != null && onlyAvailable) {
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThan(root.get("confirmedRequests"), root.get("participantLimit")));
+        }
+
+
+        List<Event> events = eventRepository.findAll(spec, pageable).getContent();
 
         List<EventShortDto> dtoList = events.stream()
                 .map(eventMapper::toEventShortDto)
@@ -215,13 +252,6 @@ public class EventServiceImpl implements EventService {
             e.setViews(views.getOrDefault(e.getId(), 0L));
             e.setConfirmedRequests(Math.toIntExact(eventRepository.countConfirmedRequests(e.getId())));
         });
-
-        if ("views".equalsIgnoreCase(sort)) {
-            dtoList.sort(Comparator.comparingLong(EventShortDto::getViews).reversed());
-        } else {
-            dtoList.sort(Comparator.comparing(EventShortDto::getEventDate));
-        }
-
 
         return dtoList;
     }
@@ -268,7 +298,7 @@ public class EventServiceImpl implements EventService {
         List<ParticipationRequestDto> confirmed = new ArrayList<>();
         List<ParticipationRequestDto> rejected = new ArrayList<>();
 
-        long confirmedCount = requestService.getRequestsByEvent(eventId).stream()
+        long confirmedCount = participationRequestRepository.findAllByEventId(eventId).stream()
                 .filter(r -> r.getStatus() == RequestStatus.CONFIRMED)
                 .count();
 
@@ -279,9 +309,12 @@ public class EventServiceImpl implements EventService {
                 throw new BadRequestException("Request " + requestId + " does not belong to event " + eventId);
             }
 
-            if (participationRequest.getStatus() == RequestStatus.CANCELED
-                    || participationRequest.getStatus() == RequestStatus.CONFIRMED
-                    || participationRequest.getStatus() == RequestStatus.PENDING) {
+            if (participationRequest.getStatus() != RequestStatus.PENDING) {
+                throw new ConflictException("Only pending requests can be changed");
+            }
+
+            if (request.getStatus() == RequestStatus.REJECTED) {
+                participationRequest.setStatus(RequestStatus.REJECTED);
                 rejected.add(participationRequestMapper.toParticipationRequestDto(participationRequest));
                 continue;
             }
@@ -289,21 +322,21 @@ public class EventServiceImpl implements EventService {
             if (request.getStatus() == RequestStatus.CONFIRMED) {
                 if (event.getParticipantLimit() != null && event.getParticipantLimit() > 0
                         && confirmedCount >= event.getParticipantLimit()) {
+                    participationRequest.setStatus(RequestStatus.REJECTED);
                     rejected.add(participationRequestMapper.toParticipationRequestDto(participationRequest));
                     continue;
                 }
-                requestService.updateRequestStatus(userId, eventId, requestId, RequestStatus.CONFIRMED);
+
+                participationRequest.setStatus(RequestStatus.CONFIRMED);
                 confirmedCount++;
-                confirmed.add(participationRequestMapper.toParticipationRequestDto(
-                        requestService.findByIdOrThrow(requestId)));
-            } else if (request.getStatus() == RequestStatus.PENDING) {
-                requestService.updateRequestStatus(userId, eventId, requestId, RequestStatus.PENDING);
-                rejected.add(participationRequestMapper.toParticipationRequestDto(
-                        requestService.findByIdOrThrow(requestId)));
+                confirmed.add(participationRequestMapper.toParticipationRequestDto(participationRequest));
             }
+
+            participationRequestRepository.save(participationRequest);
         }
 
         return new EventRequestStatusUpdateResult(confirmed, rejected);
     }
+
 }
 

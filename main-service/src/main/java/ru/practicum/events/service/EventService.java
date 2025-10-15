@@ -1,5 +1,6 @@
 package ru.practicum.events.service;
 
+import jakarta.servlet.http.HttpServletRequest;
 import ru.practicum.events.dto.*;
 import ru.practicum.events.model.Event;
 import ru.practicum.requests.dto.ParticipationRequestDto;
@@ -40,7 +41,8 @@ public interface EventService {
                                         Boolean onlyAvailable,
                                         String sort,
                                         int from,
-                                        int size);
+                                        int size,
+                                        HttpServletRequest request);
 
     List<ParticipationRequestDto> getEventRequests(Long userId, Long eventId);
 

@@ -70,7 +70,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND e.eventDate >= :start " +
             "AND (:end IS NULL OR e.eventDate <= :end) " +
             "AND (:text IS NULL OR LOWER(e.annotation) LIKE %:text% OR LOWER(e.description) LIKE %:text%) " +
-            "AND (:onlyAvailable = false OR e.participantLimit IS NULL OR e.participantLimit > SIZE(e.requests WHERE e.state = 'CONFIRMED'))")
+            "AND (:onlyAvailable = false OR e.participantLimit IS NULL " +
+            "     OR e.participantLimit > (" +
+            "         SELECT COUNT(r) FROM ParticipationRequest r " +
+            "         WHERE r.event = e AND r.status = 'CONFIRMED'))")
     List<Event> findPublicEvents(@Param("text") String text,
                                  @Param("categories") List<Long> categories,
                                  @Param("paid") Boolean paid,
@@ -80,8 +83,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                  @Param("onlyAvailable") boolean onlyAvailable,
                                  Pageable pageable);
 
-    @Query("SELECT COUNT(r) FROM Request r WHERE r.event.id = :eventId AND r.status = 'CONFIRMED'")
+    @Query("SELECT COUNT(r) FROM ParticipationRequest r WHERE r.event.id = :eventId AND r.status = 'CONFIRMED'")
     Long countConfirmedRequests(@Param("eventId") Long eventId);
+
 
 }
 

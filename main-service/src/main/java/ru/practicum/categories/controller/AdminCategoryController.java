@@ -1,6 +1,7 @@
 package ru.practicum.categories.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.categories.dto.CategoryDto;
 import ru.practicum.categories.service.CategoryService;
@@ -12,6 +13,7 @@ public class AdminCategoryController {
     private final CategoryService categoryService;
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public CategoryDto addCategory(@RequestBody CategoryDto categoryDto) {
         return categoryService.addCategory(categoryDto);
     }

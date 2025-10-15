@@ -45,6 +45,13 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
     }
 
+    public List<UserDto> getUsersByIds(List<Long> ids) {
+        return userRepository.findAllById(ids)
+                .stream()
+                .map(userMapper::toUserDto)
+                .collect(Collectors.toList());
+    }
+
 
     @Override
     public void deleteUser(Long userId) {

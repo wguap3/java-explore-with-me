@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import ru.practicum.categories.model.Category;
@@ -28,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -153,12 +153,24 @@ public class EventServiceImpl implements EventService {
         if (request.getStateAction() != null) {
             switch (request.getStateAction()) {
                 case PUBLISH_EVENT -> {
+                    if (event.getState() != EventStatus.PENDING) {
+                        throw new BadRequestException("Событие должно быть в ожидании публикации");
+                    }
+                    if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
+                        throw new BadRequestException("Дата начала события должна быть не ранее чем через час от публикации");
+                    }
                     event.setState(EventStatus.PUBLISHED);
                     event.setPublishedOn(LocalDateTime.now());
                 }
-                case REJECT_EVENT -> event.setState(EventStatus.CANCELED);
+                case REJECT_EVENT -> {
+                    if (event.getState() != EventStatus.PENDING) {
+                        throw new BadRequestException("Можно отклонить только события в ожидании публикации");
+                    }
+                    event.setState(EventStatus.CANCELED);
+                }
             }
         }
+
         return eventMapper.toEventFullDto(eventRepository.save(event));
     }
 
@@ -169,17 +181,18 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventShortDto> getPublicEvents(String text,
-                                               List<Long> categories,
-                                               Boolean paid,
-                                               String rangeStart,
-                                               String rangeEnd,
-                                               Boolean onlyAvailable,
-                                               String sort,
-                                               int from,
-                                               int size,
-                                               HttpServletRequest request) {
-
+    public List<EventShortDto> getPublicEvents(
+            String text,
+            List<Long> categories,
+            Boolean paid,
+            String rangeStart,
+            String rangeEnd,
+            Boolean onlyAvailable,
+            String sort,
+            int from,
+            int size,
+            HttpServletRequest request
+    ) {
 
         String uri = request.getRequestURI();
         String ip = request.getRemoteAddr();
@@ -188,20 +201,11 @@ public class EventServiceImpl implements EventService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime start = parseDate(rangeStart);
         LocalDateTime end = parseDate(rangeEnd);
-
         if (start == null) start = now;
         if (end == null) end = now.plusYears(100);
         if (end.isBefore(start)) {
             throw new UncorrectedParametersException("Дата окончания не может быть раньше даты начала");
         }
-
-        Sort sorting = Sort.unsorted();
-        if ("EVENT_DATE".equalsIgnoreCase(sort)) {
-            sorting = Sort.by("eventDate").ascending();
-        } else if ("VIEWS".equalsIgnoreCase(sort)) {
-            sorting = Sort.by("views").descending();
-        }
-        Pageable pageable = PageRequest.of(from / size, size, sorting);
 
 
         Specification<Event> spec = Specification.where(
@@ -237,6 +241,7 @@ public class EventServiceImpl implements EventService {
                     cb.lessThan(root.get("confirmedRequests"), root.get("participantLimit")));
         }
 
+        Pageable pageable = PageRequest.of(from / size, size);
 
         List<Event> events = eventRepository.findAll(spec, pageable).getContent();
 
@@ -252,6 +257,12 @@ public class EventServiceImpl implements EventService {
             e.setViews(views.getOrDefault(e.getId(), 0L));
             e.setConfirmedRequests(Math.toIntExact(eventRepository.countConfirmedRequests(e.getId())));
         });
+
+        if ("VIEWS".equalsIgnoreCase(sort)) {
+            dtoList.sort(Comparator.comparingLong(EventShortDto::getViews).reversed());
+        } else {
+            dtoList.sort(Comparator.comparing(EventShortDto::getEventDate));
+        }
 
         return dtoList;
     }

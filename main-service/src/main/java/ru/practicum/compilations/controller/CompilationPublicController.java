@@ -16,10 +16,13 @@ public class CompilationPublicController {
 
     @GetMapping
     public List<CompilationDto> getCompilations(
-            @RequestParam(required = false) Boolean pinned
+            @RequestParam(required = false) Boolean pinned,
+            @RequestParam(defaultValue = "0") int from,
+            @RequestParam(defaultValue = "10") int size
     ) {
-        return compilationService.getCompilations(pinned);
+        return compilationService.getCompilations(pinned, from, size);
     }
+
 
     @GetMapping("/{compId}")
     public CompilationDto getCompilation(@PathVariable Long compId) {

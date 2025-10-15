@@ -61,5 +61,9 @@ public interface EventMapper {
     @Mapping(target = "lon", source = "lon")
     void updateEventLocationFromDto(LocationDto locationDto, @MappingTarget Event event);
 
+    @Mapping(source = "category", target = "category") // Category -> CategoryDto
+    @Mapping(source = "initiator", target = "initiator") // User -> UserShortDto
+    @Mapping(source = "location", target = "location")   // Location -> LocationDto
+    EventResponseDto toResponseDto(Event event);
 
 }

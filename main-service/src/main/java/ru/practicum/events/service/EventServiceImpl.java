@@ -41,7 +41,7 @@ public class EventServiceImpl implements EventService {
     private final ParticipationRequestMapper participationRequestMapper;
 
     @Override
-    public NewEventDto addEvent(Long userId, NewEventDto newEventDto) {
+    public EventResponseDto addEvent(Long userId, NewEventDto newEventDto) {
         User initiator = userService.findByIdOrThrow(userId);
         Category category = categoryService.findByIdOrThrow(newEventDto.getCategory());
 
@@ -51,7 +51,7 @@ public class EventServiceImpl implements EventService {
         event.setState(EventStatus.PENDING);
         event.setCreatedOn(LocalDateTime.now());
 
-        return eventMapper.toNewEventDto(eventRepository.save(event));
+        return eventMapper.toResponseDto(eventRepository.save(event));
     }
 
     @Override

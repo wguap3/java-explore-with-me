@@ -26,7 +26,7 @@ public class UserEventController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public NewEventDto addEvent(
+    public EventResponseDto addEvent(
             @PathVariable Long userId,
             @RequestBody NewEventDto newEventDto) {
 

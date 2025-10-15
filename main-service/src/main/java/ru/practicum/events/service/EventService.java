@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface EventService {
-    NewEventDto addEvent(Long userId, NewEventDto newEventDto);
+    EventResponseDto addEvent(Long userId, NewEventDto newEventDto);
 
     List<EventShortDto> getEventsByUser(Long userId, int from, int size);
 

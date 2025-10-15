@@ -65,12 +65,19 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventFullDto getEventByUser(Long userId, Long eventId) {
         Event event = findByIdOrThrow(eventId);
+        if (!event.getInitiator().getId().equals(userId)) {
+            throw new ForbiddenException("User is not the initiator of the event");
+        }
         return eventMapper.toEventFullDto(event);
     }
 
     @Override
     public EventFullDto updateEventByUser(Long userId, Long eventId, UpdateEventUserRequest request) {
         Event event = findByIdOrThrow(eventId);
+
+        if (!event.getInitiator().getId().equals(userId)) {
+            throw new ForbiddenException("User is not the initiator of the event");
+        }
 
         if (request.getCategory() != null) {
             event.setCategory(categoryService.findByIdOrThrow(request.getCategory()));
@@ -91,7 +98,6 @@ public class EventServiceImpl implements EventService {
 
         return eventMapper.toEventFullDto(eventRepository.save(event));
     }
-
 
     @Override
     public List<EventFullDto> getAdminEvents(List<Long> userIds,
@@ -140,7 +146,6 @@ public class EventServiceImpl implements EventService {
         return eventMapper.toEventFullDto(eventRepository.save(event));
     }
 
-
     @Override
     public Event findByIdOrThrow(Long eventId) {
         return eventRepository.findById(eventId)
@@ -173,7 +178,7 @@ public class EventServiceImpl implements EventService {
                 dtoList.stream().map(EventShortDto::getId).toList()
         );
 
-        dtoList.forEach(e -> e.setViews(views.getOrDefault(e.getId(), 0L))); // если views Long в DTO
+        dtoList.forEach(e -> e.setViews(views.getOrDefault(e.getId(), 0L)));
 
         if ("views".equalsIgnoreCase(sort)) {
             dtoList.sort(Comparator.comparingLong(EventShortDto::getViews).reversed());
@@ -190,7 +195,6 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Event not found"));
 
         EventFullDto dto = eventMapper.toEventFullDto(event);
-
         Long views = eventStatsService.getViews(List.of(eventId)).getOrDefault(eventId, 0L);
         dto.setViews(views);
 
@@ -205,10 +209,8 @@ public class EventServiceImpl implements EventService {
             throw new ForbiddenException("User is not the initiator of the event");
         }
 
-        // Получаем все заявки на событие через сервис
         return requestService.getRequestsByEvent(eventId);
     }
-
 
     @Override
     public EventRequestStatusUpdateResult updateEventRequestStatus(
@@ -262,5 +264,5 @@ public class EventServiceImpl implements EventService {
 
         return new EventRequestStatusUpdateResult(confirmed, rejected);
     }
-
 }
+

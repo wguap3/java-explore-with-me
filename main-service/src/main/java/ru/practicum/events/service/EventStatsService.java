@@ -17,15 +17,16 @@ public class EventStatsService {
 
     private final StatsClient statsClient;
 
-    public void registerView(Long eventId, String ip) {
+    public void registerView(String uri, String ip) {
         EndpointHitDto hit = new EndpointHitDto();
         hit.setApp("explore-with-me");
-        hit.setUri("/events/" + eventId);
+        hit.setUri(uri);
         hit.setIp(ip);
         hit.setTimestamp(LocalDateTime.now());
 
         statsClient.saveHit(hit);
     }
+
 
     public Map<Long, Long> getViews(List<Long> eventIds) {
         List<String> uris = eventIds.stream()

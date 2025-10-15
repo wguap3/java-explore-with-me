@@ -2,6 +2,7 @@ package ru.practicum.events.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.categories.model.Category;
 import ru.practicum.categories.service.CategoryService;
@@ -165,23 +166,42 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found"));
     }
 
-    @Override
-    public void addView(Long eventId, String ip) {
-        eventStatsService.registerView(eventId, ip);
-    }
 
     @Override
-    public Map<Long, Long> getViews(List<Long> eventIds) {
-        return eventStatsService.getViews(eventIds);
-    }
+    public List<EventShortDto> getPublicEvents(String text,
+                                               List<Long> categories,
+                                               Boolean paid,
+                                               String rangeStart,
+                                               String rangeEnd,
+                                               Boolean onlyAvailable,
+                                               String sort,
+                                               int from,
+                                               int size) {
 
-    @Override
-    public List<EventShortDto> getPublicEvents(Long categoryId, String sort, int from, int size) {
-        PageRequest page = PageRequest.of(from / size, size);
+        List<EventStatus> statusList = List.of(EventStatus.PUBLISHED);
 
-        List<Event> events = (categoryId != null) ?
-                eventRepository.findAllByStateAndCategoryId(EventStatus.PUBLISHED, categoryId, page).getContent() :
-                eventRepository.findAllByState(EventStatus.PUBLISHED, page).getContent();
+        LocalDateTime start = parseDate(rangeStart);
+        LocalDateTime end   = parseDate(rangeEnd);
+        if (start == null) start = LocalDateTime.now();
+        if (end == null) end = LocalDateTime.now().plusYears(100);
+
+        PageRequest page;
+        if ("EVENT_DATE".equalsIgnoreCase(sort)) {
+            page = PageRequest.of(from / size, size, Sort.by("eventDate").ascending());
+        } else {
+            page = PageRequest.of(from / size, size);
+        }
+
+        List<Event> events = eventRepository.findPublicEvents(
+                text != null ? text.toLowerCase() : null,
+                categories,
+                paid,
+                statusList,
+                start,
+                end,
+                onlyAvailable != null && onlyAvailable,
+                page
+        );
 
         List<EventShortDto> dtoList = events.stream()
                 .map(eventMapper::toEventShortDto)
@@ -191,7 +211,10 @@ public class EventServiceImpl implements EventService {
                 dtoList.stream().map(EventShortDto::getId).toList()
         );
 
-        dtoList.forEach(e -> e.setViews(views.getOrDefault(e.getId(), 0L)));
+        dtoList.forEach(e -> {
+            e.setViews(views.getOrDefault(e.getId(), 0L));
+            e.setConfirmedRequests(Math.toIntExact(eventRepository.countConfirmedRequests(e.getId())));
+        });
 
         if ("views".equalsIgnoreCase(sort)) {
             dtoList.sort(Comparator.comparingLong(EventShortDto::getViews).reversed());
@@ -199,8 +222,10 @@ public class EventServiceImpl implements EventService {
             dtoList.sort(Comparator.comparing(EventShortDto::getEventDate));
         }
 
+
         return dtoList;
     }
+
 
     @Override
     public EventFullDto getPublicEventById(Long eventId) {
@@ -211,8 +236,11 @@ public class EventServiceImpl implements EventService {
         Long views = eventStatsService.getViews(List.of(eventId)).getOrDefault(eventId, 0L);
         dto.setViews(views);
 
+        dto.setConfirmedRequests(eventRepository.countConfirmedRequests(eventId));
+
         return dto;
     }
+
 
     @Override
     public List<ParticipationRequestDto> getEventRequests(Long userId, Long eventId) {

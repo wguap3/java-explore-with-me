@@ -30,13 +30,18 @@ public interface EventService {
 
     EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest request);
 
-    void addView(Long eventId, String ip);
-
-    Map<Long, Long> getViews(List<Long> eventIds);
 
     EventFullDto getPublicEventById(Long eventId);
 
-    List<EventShortDto> getPublicEvents(Long categoryId, String sort, int from, int size);
+    List<EventShortDto> getPublicEvents(String text,
+                                        List<Long> categories,
+                                        Boolean paid,
+                                        String rangeStart,
+                                        String rangeEnd,
+                                        Boolean onlyAvailable,
+                                        String sort,
+                                        int from,
+                                        int size);
 
     List<ParticipationRequestDto> getEventRequests(Long userId, Long eventId);
 

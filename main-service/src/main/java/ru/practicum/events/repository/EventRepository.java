@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.practicum.events.model.Event;
 import ru.practicum.events.model.EventStatus;
@@ -61,5 +62,25 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 
     Optional<Event> findByIdAndState(Long id, EventStatus state);
+    @Query("SELECT e FROM Event e " +
+            "WHERE e.state IN :states " +
+            "AND (:categories IS NULL OR e.category.id IN :categories) " +
+            "AND (:paid IS NULL OR e.paid = :paid) " +
+            "AND e.eventDate >= :start " +
+            "AND (:end IS NULL OR e.eventDate <= :end) " +
+            "AND (:text IS NULL OR LOWER(e.annotation) LIKE %:text% OR LOWER(e.description) LIKE %:text%) " +
+            "AND (:onlyAvailable = false OR e.participantLimit IS NULL OR e.participantLimit > SIZE(e.requests WHERE e.state = 'CONFIRMED'))")
+    List<Event> findPublicEvents(@Param("text") String text,
+                                 @Param("categories") List<Long> categories,
+                                 @Param("paid") Boolean paid,
+                                 @Param("states") List<EventStatus> states,
+                                 @Param("start") LocalDateTime start,
+                                 @Param("end") LocalDateTime end,
+                                 @Param("onlyAvailable") boolean onlyAvailable,
+                                 Pageable pageable);
+
+    @Query("SELECT COUNT(r) FROM Request r WHERE r.event.id = :eventId AND r.status = 'CONFIRMED'")
+    Long countConfirmedRequests(@Param("eventId") Long eventId);
+
 }
 

@@ -8,12 +8,15 @@ import ru.practicum.requests.dto.ParticipationRequestDto;
 import ru.practicum.requests.model.ParticipationRequest;
 import ru.practicum.user.model.User;
 
+import java.time.LocalDateTime;
+
 @Mapper(componentModel = "spring")
 public interface ParticipationRequestMapper {
 
     // -------------------- Entity -> DTO --------------------
     @Mapping(target = "requester", source = "requester.id")
     @Mapping(target = "event", source = "event.id")
+    @Mapping(target = "created", source = "created")
     ParticipationRequestDto toParticipationRequestDto(ParticipationRequest participationRequest);
 
     // -------------------- DTO -> Entity --------------------
@@ -38,6 +41,10 @@ public interface ParticipationRequestMapper {
         User u = new User();
         u.setId(userId);
         return u;
+    }
+
+    default LocalDateTime mapCreated(LocalDateTime created) {
+        return created == null ? null : created.truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
     }
 }
 

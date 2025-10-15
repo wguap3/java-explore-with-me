@@ -1,5 +1,6 @@
 package ru.practicum.compilations.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,7 @@ public class CompilationAdminController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CompilationDto createCompilation(@RequestBody NewCompilationDto dto) {
+    public CompilationDto createCompilation(@Valid @RequestBody NewCompilationDto dto) {
         return compilationService.createCompilation(dto);
     }
 

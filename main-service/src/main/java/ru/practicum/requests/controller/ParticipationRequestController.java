@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.requests.dto.ParticipationRequestDto;
 import ru.practicum.requests.service.ParticipationRequestService;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -24,7 +25,7 @@ public class ParticipationRequestController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ParticipationRequestDto createRequest(@PathVariable Long userId,
-                                                 @RequestParam Long eventId) {
+                                                 @Valid @RequestParam Long eventId) {
         return participationRequestService.createRequest(userId, eventId);
     }
 

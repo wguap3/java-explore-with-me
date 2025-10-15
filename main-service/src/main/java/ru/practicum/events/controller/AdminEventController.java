@@ -6,6 +6,7 @@ import ru.practicum.events.dto.EventFullDto;
 import ru.practicum.events.dto.UpdateEventAdminRequest;
 import ru.practicum.events.service.EventService;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -31,7 +32,7 @@ public class AdminEventController {
     @PatchMapping("/{eventId}")
     public EventFullDto updateEventByAdmin(
             @PathVariable Long eventId,
-            @RequestBody UpdateEventAdminRequest request) {
+            @Valid @RequestBody UpdateEventAdminRequest request) {
 
         return eventService.updateEventByAdmin(eventId, request);
     }

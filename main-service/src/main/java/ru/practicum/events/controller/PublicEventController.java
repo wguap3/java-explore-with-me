@@ -19,9 +19,7 @@ public class PublicEventController {
     private final EventStatsService eventStatsService;
 
     @GetMapping
-    public <List<EventShortDto>>
-
-    getPublicEvents(
+    public List<EventShortDto> getPublicEvents(
             @RequestParam(required = false) String text,
             @RequestParam(required = false) List<Long> categories,
             @RequestParam(required = false) Boolean paid,
@@ -33,12 +31,9 @@ public class PublicEventController {
             @RequestParam(defaultValue = "10") int size,
             HttpServletRequest request
     ) {
-        // Передаём request в сервис для регистрации статистики
-        List<EventShortDto> events = eventService.getPublicEvents(
+        return eventService.getPublicEvents(
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size, request
         );
-
-        return ResponseEntity.ok(events);
     }
 
 

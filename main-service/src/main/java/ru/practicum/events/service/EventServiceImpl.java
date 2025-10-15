@@ -23,6 +23,7 @@ import ru.practicum.user.service.UserService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -107,11 +108,12 @@ public class EventServiceImpl implements EventService {
                                              String rangeEnd,
                                              int from,
                                              int size) {
+
         List<EventStatus> statusList = (states != null) ?
                 states.stream().map(EventStatus::valueOf).toList() : null;
 
-        LocalDateTime start = (rangeStart != null) ? LocalDateTime.parse(rangeStart, DateTimeFormatter.ISO_DATE_TIME) : null;
-        LocalDateTime end = (rangeEnd != null) ? LocalDateTime.parse(rangeEnd, DateTimeFormatter.ISO_DATE_TIME) : null;
+        LocalDateTime start = parseDate(rangeStart);
+        LocalDateTime end = parseDate(rangeEnd);
 
         PageRequest page = PageRequest.of(from / size, size);
 
@@ -119,6 +121,17 @@ public class EventServiceImpl implements EventService {
                 .map(eventMapper::toEventFullDto)
                 .collect(Collectors.toList());
     }
+
+    private LocalDateTime parseDate(String dateStr) {
+        if (dateStr == null) return null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        try {
+            return LocalDateTime.parse(dateStr, formatter);
+        } catch (DateTimeParseException e) {
+            return LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_DATE_TIME);
+        }
+    }
+
 
     @Override
     public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest request) {

@@ -45,10 +45,4 @@ public class ErrorHandler {
     public Map<String, String> handleUncorrectedParams(UncorrectedParametersException e) {
         return Map.of("error", e.getMessage());
     }
-
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Map<String, String> handleOtherErrors(Exception e) {
-        return Map.of("error", "Внутренняя ошибка сервера", "details", e.getMessage());
-    }
 }

@@ -64,9 +64,6 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     public void deleteCompilation(Long compId) {
-        if (!compilationRepository.existsById(compId)) {
-            throw new NotFoundException("Compilation not found");
-        }
         compilationRepository.deleteById(compId);
     }
 

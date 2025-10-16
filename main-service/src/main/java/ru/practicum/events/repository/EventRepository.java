@@ -121,5 +121,7 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
             Pageable pageable
     );
 
+    boolean existsByCategoryId(Long categoryId);
+
 }
 

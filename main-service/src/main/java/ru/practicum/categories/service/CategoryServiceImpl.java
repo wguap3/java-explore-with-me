@@ -8,6 +8,7 @@ import ru.practicum.categories.dto.CategoryDto;
 import ru.practicum.categories.mapper.CategoryMapper;
 import ru.practicum.categories.model.Category;
 import ru.practicum.categories.repository.CategoryRepository;
+import ru.practicum.events.repository.EventRepository;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
+    private final EventRepository eventRepository;
 
     @Override
     public CategoryDto addCategory(CategoryDto categoryDto) {
@@ -67,6 +69,11 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void deleteCategory(Long categoryId) {
+        findByIdOrThrow(categoryId);
+        boolean hasEvents = eventRepository.existsByCategoryId(categoryId);
+        if (hasEvents) {
+            throw new ConflictException("Cannot delete category with id " + categoryId + " because it has linked events");
+        }
         categoryRepository.deleteById(categoryId);
     }
 

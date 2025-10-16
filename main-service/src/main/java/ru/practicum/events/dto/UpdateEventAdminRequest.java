@@ -20,7 +20,7 @@ public class UpdateEventAdminRequest {
     private String annotation;
     private Long category;
     @NotBlank
-    @Size(min = 20, message = "Description must be at least 20 characters")
+    @Size(min = 20, max = 7000, message = "Description must be at least 20 characters")
     private String description;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime eventDate;

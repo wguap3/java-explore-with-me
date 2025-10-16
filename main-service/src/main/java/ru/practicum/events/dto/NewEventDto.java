@@ -22,7 +22,7 @@ public class NewEventDto {
     @Size(min = 20, max = 2000, message = "Description must be at least 20 characters")
     private String annotation;
     @NotBlank
-    @Size(min = 20, message = "Description must be at least 20 characters")
+    @Size(min = 20, max = 7000, message = "Description must be at least 20 characters")
     private String description;
     @NotNull
     private Long category;

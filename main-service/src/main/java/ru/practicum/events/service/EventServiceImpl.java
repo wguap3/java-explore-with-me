@@ -56,14 +56,23 @@ public class EventServiceImpl implements EventService {
         User initiator = userService.findByIdOrThrow(userId);
         Category category = categoryService.findByIdOrThrow(newEventDto.getCategory());
 
+        if (newEventDto.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
+            throw new BadRequestException("Event date must be at least 2 hours from now");
+        }
+
         Event event = eventMapper.toEvent(newEventDto);
         event.setInitiator(initiator);
         event.setCategory(category);
         event.setState(EventStatus.PENDING);
         event.setCreatedOn(LocalDateTime.now());
 
+        if (newEventDto.getPaid() == null) event.setPaid(false);
+        if (newEventDto.getParticipantLimit() == null) event.setParticipantLimit(0);
+        if (newEventDto.getRequestModeration() == null) event.setRequestModeration(true);
+
         return eventMapper.toResponseDto(eventRepository.save(event));
     }
+
 
     @Override
     public List<EventShortDto> getEventsByUser(Long userId, int from, int size) {
@@ -99,11 +108,20 @@ public class EventServiceImpl implements EventService {
         }
 
         eventMapper.updateEventFromUser(request, event);
-
         if (request.getStateAction() != null) {
             switch (request.getStateAction()) {
-                case SEND_TO_REVIEW -> event.setState(EventStatus.PENDING);
-                case CANCEL_REVIEW -> event.setState(EventStatus.CANCELED);
+                case SEND_TO_REVIEW -> {
+                    if (event.getState() != EventStatus.CANCELED) {
+                        throw new BadRequestException("Only events in CANCELED state can be sent to review");
+                    }
+                    event.setState(EventStatus.PENDING);
+                }
+                case CANCEL_REVIEW -> {
+                    if (event.getState() != EventStatus.PENDING) {
+                        throw new BadRequestException("Only events in PENDING state can be canceled");
+                    }
+                    event.setState(EventStatus.CANCELED);
+                }
             }
         }
 

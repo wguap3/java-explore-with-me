@@ -1,7 +1,5 @@
 package ru.practicum.compilations.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,7 +12,5 @@ import java.util.Set;
 public class UpdateCompilationRequest {
     private Set<Long> events;
     private Boolean pinned;
-    @Size(max = 50, message = "Название подборки не может превышать 50 символов")
-    @NotBlank(message = "Название подборки не может быть пустым")
     private String title;
 }

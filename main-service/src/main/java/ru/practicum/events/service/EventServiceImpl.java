@@ -235,9 +235,6 @@ public class EventServiceImpl implements EventService {
                 .map(eventMapper::toEventShortDto)
                 .toList();
 
-        if (list.isEmpty()) {
-            throw new BadRequestException("Event must be published");
-        }
         return list;
     }
 

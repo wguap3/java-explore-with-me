@@ -31,6 +31,7 @@ import ru.practicum.requests.service.ParticipationRequestService;
 import ru.practicum.user.model.User;
 import ru.practicum.user.service.UserService;
 
+import javax.validation.Valid;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
+
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
     private final UserService userService;
@@ -51,7 +53,7 @@ public class EventServiceImpl implements EventService {
     private final StatsClient statsClient;
 
     @Override
-    public EventResponseDto addEvent(Long userId, NewEventDto newEventDto) {
+    public EventResponseDto addEvent(Long userId, @Valid NewEventDto newEventDto) {
         User initiator = userService.findByIdOrThrow(userId);
         Category category = categoryService.findByIdOrThrow(newEventDto.getCategory());
 
@@ -82,7 +84,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventFullDto updateEventByUser(Long userId, Long eventId, UpdateEventUserRequest request) {
+    public EventFullDto updateEventByUser(Long userId, Long eventId, @Valid UpdateEventUserRequest request) {
         Event event = findByIdOrThrow(eventId);
 
         if (!event.getInitiator().getId().equals(userId)) {
@@ -151,9 +153,8 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-
     @Override
-    public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest request) {
+    public EventFullDto updateEventByAdmin(Long eventId, @Valid UpdateEventAdminRequest request) {
         Event event = findByIdOrThrow(eventId);
 
         if (request.getCategory() != null) {
@@ -196,6 +197,7 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found"));
     }
 
+    @Override
     public List<EventShortDto> findEvents(String text,
                                           List<Integer> categories,
                                           Boolean paid,
@@ -231,13 +233,10 @@ public class EventServiceImpl implements EventService {
                 LocalDateTime.now()
         ));
 
-        List<EventShortDto> list = events.stream()
+        return events.stream()
                 .map(eventMapper::toEventShortDto)
                 .toList();
-
-        return list;
     }
-
 
     @Override
     @Transactional
@@ -263,7 +262,6 @@ public class EventServiceImpl implements EventService {
 
         return eventMapper.toEventFullDto(event);
     }
-
 
     @Override
     public List<ParticipationRequestDto> getEventRequests(Long userId, Long eventId) {
@@ -330,6 +328,5 @@ public class EventServiceImpl implements EventService {
 
         return new EventRequestStatusUpdateResult(confirmed, rejected);
     }
-
 }
 

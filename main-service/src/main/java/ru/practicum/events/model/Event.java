@@ -64,4 +64,6 @@ public class Event {
 
     @Column(name = "request_moderation")
     private Boolean requestModeration;
+
+    private int views;
 }

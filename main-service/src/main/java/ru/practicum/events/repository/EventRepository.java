@@ -87,6 +87,39 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
     @Query("SELECT COUNT(r) FROM ParticipationRequest r WHERE r.event.id = :eventId AND r.status = 'CONFIRMED'")
     Long countConfirmedRequests(@Param("eventId") Long eventId);
 
+    @Query("SELECT e FROM Event e " +
+            "WHERE e.state = 'PUBLISHED' " +
+            "AND (:text IS NULL OR LOWER(e.annotation) LIKE LOWER(:text) OR LOWER(e.description) LIKE LOWER(:text)) " +
+            "AND (:categories IS NULL OR e.category.id IN :categories) " +
+            "AND (:paid IS NULL OR e.paid = :paid) " +
+            "AND (e.eventDate >= :start) " +
+            "AND (e.eventDate <= :end) " +
+            "AND (:onlyAvailable = false OR e.participantLimit = 0 OR e.participantLimit > 0)")
+    Page<Event> findEventsWithFilters(
+            @Param("text") String text,
+            @Param("categories") List<Integer> categories,
+            @Param("paid") Boolean paid,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            @Param("onlyAvailable") Boolean onlyAvailable,
+            Pageable pageable
+    );
+
+    @Query("SELECT e FROM Event e " +
+            "WHERE e.state = 'PUBLISHED' " +
+            "AND (:text IS NULL OR LOWER(e.annotation) LIKE LOWER(:text) OR LOWER(e.description) LIKE LOWER(:text)) " +
+            "AND (:categories IS NULL OR e.category.id IN :categories) " +
+            "AND (:paid IS NULL OR e.paid = :paid) " +
+            "AND (e.eventDate >= :currentTimestamp) " +
+            "AND (:onlyAvailable = false OR e.participantLimit = 0 OR e.participantLimit > 0)")
+    Page<Event> findEventsWithFiltersWithoutDate(
+            @Param("text") String text,
+            @Param("categories") List<Integer> categories,
+            @Param("paid") Boolean paid,
+            @Param("onlyAvailable") Boolean onlyAvailable,
+            @Param("currentTimestamp") LocalDateTime currentTimestamp,
+            Pageable pageable
+    );
 
 }
 

@@ -33,4 +33,17 @@ public class StatsClient extends BaseClient {
 
         return (List<ViewStatsDto>) get(STATS_PATH, params).getBody();
     }
+
+    public boolean existsByIpAndUri(String ip, String uri) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = now.minusDays(30);
+        List<ViewStatsDto> stats = getStats(start, now, List.of(uri), true);
+
+        if (stats == null || stats.isEmpty()) {
+            return false;
+        }
+
+        return stats.stream()
+                .anyMatch(s -> s.getUri().equals(uri) && s.getHits() > 0);
+    }
 }

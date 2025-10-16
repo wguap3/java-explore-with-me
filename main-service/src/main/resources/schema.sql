@@ -33,6 +33,7 @@ CREATE TABLE events(
     paid BOOLEAN NOT NULL,
     participant_limit INT DEFAULT 0,
     request_moderation BOOLEAN DEFAULT TRUE,
+    views INTEGER,
 
     CONSTRAINT fk_event_category
         FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE CASCADE,

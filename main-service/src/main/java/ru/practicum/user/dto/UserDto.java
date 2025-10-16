@@ -18,6 +18,6 @@ public class UserDto {
     private String name;
     @Email(message = "Некорректный email")
     @NotBlank(message = "Email обязателен")
-    @Size(max = 254, message = "Email слишком длинный")
+    @Size(min = 6, max = 254, message = "Email слишком длинный")
     private String email;
 }

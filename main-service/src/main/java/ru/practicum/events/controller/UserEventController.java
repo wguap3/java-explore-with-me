@@ -46,7 +46,7 @@ public class UserEventController {
     public EventFullDto updateUserEvent(
             @PathVariable Long userId,
             @PathVariable Long eventId,
-            @RequestBody UpdateEventUserRequest request) {
+            @Valid @RequestBody UpdateEventUserRequest request) {
 
         return eventService.updateEventByUser(userId, eventId, request);
     }
@@ -63,7 +63,7 @@ public class UserEventController {
     public EventRequestStatusUpdateResult updateEventRequestStatus(
             @PathVariable Long userId,
             @PathVariable Long eventId,
-            @RequestBody EventRequestStatusUpdateRequest request) {
+            @Valid @RequestBody EventRequestStatusUpdateRequest request) {
         return eventService.updateEventRequestStatus(userId, eventId, request);
     }
 

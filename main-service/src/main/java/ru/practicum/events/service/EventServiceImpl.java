@@ -45,7 +45,6 @@ public class EventServiceImpl implements EventService {
     private final EventMapper eventMapper;
     private final UserService userService;
     private final CategoryService categoryService;
-    private final EventStatsService eventStatsService;
     private final ParticipationRequestService requestService;
     private final ParticipationRequestMapper participationRequestMapper;
     private final ParticipationRequestRepository participationRequestRepository;
@@ -102,8 +101,18 @@ public class EventServiceImpl implements EventService {
 
         if (request.getStateAction() != null) {
             switch (request.getStateAction()) {
-                case SEND_TO_REVIEW -> event.setState(EventStatus.PENDING);
-                case CANCEL_REVIEW -> event.setState(EventStatus.CANCELED);
+                case SEND_TO_REVIEW -> {
+                    if (event.getState() == EventStatus.PUBLISHED) {
+                        throw new BadRequestException("Cannot send a published event to review");
+                    }
+                    event.setState(EventStatus.PENDING);
+                }
+                case CANCEL_REVIEW -> {
+                    if (event.getState() != EventStatus.PENDING) {
+                        throw new BadRequestException("Only events in PENDING state can be canceled");
+                    }
+                    event.setState(EventStatus.CANCELED);
+                }
             }
         }
 

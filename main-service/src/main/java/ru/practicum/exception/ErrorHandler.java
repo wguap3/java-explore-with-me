@@ -21,4 +21,34 @@ public class ErrorHandler {
     public Map<String, String> handleEmailConflict(EmailAlreadyExistsException e) {
         return Map.of("error", e.getMessage());
     }
+
+    @ExceptionHandler(ConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleConflict(ConflictException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleBadRequest(BadRequestException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, String> handleForbidden(ForbiddenException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(UncorrectedParametersException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleUncorrectedParams(UncorrectedParametersException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleOtherErrors(Exception e) {
+        return Map.of("error", "Внутренняя ошибка сервера", "details", e.getMessage());
+    }
 }

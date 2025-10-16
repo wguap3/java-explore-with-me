@@ -39,10 +39,4 @@ public class ErrorHandler {
     public Map<String, String> handleForbidden(ForbiddenException e) {
         return Map.of("error", e.getMessage());
     }
-
-    @ExceptionHandler(UncorrectedParametersException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleUncorrectedParams(UncorrectedParametersException e) {
-        return Map.of("error", e.getMessage());
-    }
 }

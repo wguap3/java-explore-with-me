@@ -15,7 +15,6 @@ import ru.practicum.user.service.UserService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-
 @Component
 @RequiredArgsConstructor
 public class EventMapper {
@@ -94,4 +93,3 @@ public class EventMapper {
     }
 
 }
-

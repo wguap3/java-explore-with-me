@@ -10,6 +10,7 @@ import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -79,11 +80,15 @@ public class StatClient {
                                        List<String> uris, boolean unique) {
         log.info("Запрос статистики: start={}, end={}, uris={}, unique={}", start, end, uris, unique);
 
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String startStr = start.format(formatter);
+        String endStr = end.format(formatter);
+
         return webClient.get()
                 .uri(uriBuilder -> {
                     UriBuilder builder = uriBuilder.path("/stats")
-                            .queryParam("start", start)
-                            .queryParam("end", end)
+                            .queryParam("start", startStr)
+                            .queryParam("end", endStr)
                             .queryParam("unique", unique);
                     if (uris != null && !uris.isEmpty()) {
                         uris.forEach(uri -> builder.queryParam("uris", uri));

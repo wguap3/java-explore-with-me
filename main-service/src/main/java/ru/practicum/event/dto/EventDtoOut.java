@@ -3,8 +3,6 @@ package ru.practicum.event.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import ru.practicum.categories.dto.CategoryDtoOut;
 import ru.practicum.location.Location;
 import ru.practicum.user.dto.UserShortDtoOut;

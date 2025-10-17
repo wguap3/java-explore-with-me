@@ -3,7 +3,6 @@ package ru.practicum.participation.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import ru.practicum.enums.EveState;
 import ru.practicum.enums.PartState;
 import ru.practicum.enums.UpdateState;

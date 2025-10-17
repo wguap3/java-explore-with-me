@@ -3,9 +3,6 @@ package ru.practicum.user.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.Length;
 
 @Data

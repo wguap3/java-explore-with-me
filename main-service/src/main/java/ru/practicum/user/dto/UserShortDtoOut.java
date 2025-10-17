@@ -1,8 +1,7 @@
 package ru.practicum.user.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
+import lombok.Data;
 
 @Data
 public class UserShortDtoOut {

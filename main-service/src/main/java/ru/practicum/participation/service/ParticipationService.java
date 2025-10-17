@@ -1,7 +1,6 @@
 package ru.practicum.participation.service;
 
 
-
 import ru.practicum.participation.dto.ParticipationDtoOut;
 import ru.practicum.participation.dto.ParticipationUpdateDtoIn;
 import ru.practicum.participation.dto.ParticipationUpdateDtoOut;

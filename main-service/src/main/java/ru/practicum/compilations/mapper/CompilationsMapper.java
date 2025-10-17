@@ -1,19 +1,13 @@
 package ru.practicum.compilations.mapper;
 
-import lombok.RequiredArgsConstructor;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
 import ru.practicum.compilations.dto.CompilationsDtoIn;
 import ru.practicum.compilations.dto.CompilationsDtoOut;
 import ru.practicum.compilations.model.Compilations;
 import ru.practicum.event.service.EventService;
-
-
-import java.util.List;
-
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 

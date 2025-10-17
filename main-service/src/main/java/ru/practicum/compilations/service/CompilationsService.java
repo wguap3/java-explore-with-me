@@ -5,7 +5,6 @@ import ru.practicum.compilations.dto.CompilationsDtoIn;
 import ru.practicum.compilations.dto.CompilationsDtoOut;
 import ru.practicum.compilations.dto.CompilationsUpdateDtoIn;
 
-
 import java.util.List;
 
 public interface CompilationsService {

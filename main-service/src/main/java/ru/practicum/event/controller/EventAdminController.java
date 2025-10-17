@@ -5,8 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.event.dto.EventDtoOut;
-import ru.practicum.event.service.EventService;
 import ru.practicum.event.dto.EventUpdateDtoIn;
+import ru.practicum.event.service.EventService;
 
 import java.util.List;
 

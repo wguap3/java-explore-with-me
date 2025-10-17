@@ -67,7 +67,8 @@ public class StatClient {
                     return builder.build();
                 })
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<ViewStatsDto>>() {})
+                .bodyToMono(new ParameterizedTypeReference<List<ViewStatsDto>>() {
+                })
                 .block();
     }
 }

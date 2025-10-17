@@ -1,9 +1,6 @@
 package ru.practicum.event.mapper;
 
 import lombok.RequiredArgsConstructor;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.practicum.categories.service.CategoryService;
 import ru.practicum.enums.EveState;
@@ -14,11 +11,9 @@ import ru.practicum.event.model.Event;
 import ru.practicum.location.Location;
 import ru.practicum.participation.repository.ParticipationRepository;
 import ru.practicum.user.service.UserService;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
-
-import org.mapstruct.Mappings;
 
 
 @Component

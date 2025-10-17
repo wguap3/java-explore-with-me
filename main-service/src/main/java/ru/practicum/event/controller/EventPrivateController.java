@@ -66,7 +66,7 @@ public class EventPrivateController {
     @PatchMapping("/{eventId}/requests")
     public ParticipationUpdateDtoOut updateEventRequests(@PathVariable(name = "userId") Long userId,
                                                          @PathVariable(name = "eventId") Long eventId,
-                                                         @RequestBody (required = false) ParticipationUpdateDtoIn participationUpdateDtoIn) {
+                                                         @RequestBody(required = false) ParticipationUpdateDtoIn participationUpdateDtoIn) {
         log.info("PATCH/ Проверка параметров запроса метода updateEventRequests, userId - {}, eventId - {}, participationUpdateDtoIn - {}", userId, eventId, participationUpdateDtoIn);
         return participationService.updateEventRequests(userId, eventId, participationUpdateDtoIn);
     }

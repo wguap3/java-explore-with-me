@@ -8,7 +8,6 @@ import ru.practicum.event.dto.EventDtoOut;
 import ru.practicum.event.dto.EventShortDtoOut;
 import ru.practicum.event.service.EventService;
 
-
 import java.util.List;
 
 @Slf4j

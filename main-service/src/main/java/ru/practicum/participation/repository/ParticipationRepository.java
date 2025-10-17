@@ -4,7 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import ru.practicum.participation.model.Participation;
 
-
 import java.util.List;
 
 public interface ParticipationRepository extends JpaRepository<Participation, Long> {

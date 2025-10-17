@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 public class CompilationsDtoIn {
-    List<Integer> events;
+    List<Long> events;
     Boolean pinned;
     @NotBlank
     @Length(max = 50, min = 0)

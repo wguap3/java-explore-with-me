@@ -2,8 +2,8 @@ package ru.practicum.compilations.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
-import org.hibernate.validator.constraints.Length;
 import ru.practicum.event.dto.EventShortDtoOut;
 
 import java.util.List;
@@ -16,6 +16,6 @@ public class CompilationsDtoOut {
     @NotNull
     Boolean pinned;
     @NotBlank
-    @Length(max = 50, min = 0)
+    @Size(max = 50)
     String title;
 }

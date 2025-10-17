@@ -1,14 +1,14 @@
 package ru.practicum.compilations.dto;
 
+import jakarta.validation.constraints.Size;
 import lombok.Data;
-import org.hibernate.validator.constraints.Length;
 
 import java.util.List;
 
 @Data
 public class CompilationsUpdateDtoIn {
-    List<Integer> events;
+    List<Long> events;
     Boolean pinned;
-    @Length(max = 50, min = 0)
+    @Size(max = 50)
     String title;
 }

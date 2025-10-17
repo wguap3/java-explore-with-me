@@ -43,11 +43,14 @@ public class StatClient {
      */
     public void sendHitId(Long id) {
         log.info("Отправка события с ID={} в сервис статистики", id);
+
         webClient.post()
                 .uri("/hit/{id}", id)
                 .retrieve()
                 .toBodilessEntity()
-                .block();
+                .doOnSuccess(resp -> log.info("Событие с ID={} отправлено успешно", id))
+                .doOnError(e -> log.error("Ошибка отправки события с ID={}", id, e))
+                .subscribe();
     }
 
     /**

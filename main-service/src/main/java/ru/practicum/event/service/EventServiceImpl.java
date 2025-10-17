@@ -84,7 +84,6 @@ public class EventServiceImpl implements EventService {
         statsClient.sendHit();
 
         String lowText = text.toLowerCase().replace("\"", "");
-        log.info("Processed text for search: '{}'", lowText);
 
         List<Event> events;
         if (rangeStart != null && rangeEnd != null) {
@@ -92,26 +91,21 @@ public class EventServiceImpl implements EventService {
                 throw new BadRequestException("Дата начала события позже даты конца события!");
             }
             events = eventRepository.getPublicEventByTextAndStartAndEnd(lowText, parseDate(rangeStart), parseDate(rangeEnd));
-            log.info("Events after filtering by rangeStart and rangeEnd: {}", events.size());
         } else if (rangeStart != null) {
             events = eventRepository.getPublicEventByTextAndStart(lowText, parseDate(rangeStart));
-            log.info("Events after filtering by rangeStart: {}", events.size());
         } else if (rangeEnd != null) {
             events = eventRepository.getPublicEventByTextAndEnd(lowText, parseDate(rangeEnd));
-            log.info("Events after filtering by rangeEnd: {}", events.size());
         } else {
             events = eventRepository.getPublicEventByText(lowText);
-            log.info("Events without date filter: {}", events.size());
         }
 
         // Фильтр по оплате
         List<Event> firstEvents;
         if (paid != null) {
             firstEvents = events.stream().filter(event -> event.getPaid() != null && event.getPaid().equals(paid)).toList();
-            log.info("Events after paid filter (paid={}): {}", paid, firstEvents.size());
+
         } else {
             firstEvents = events;
-            log.info("No paid filter applied, events count: {}", firstEvents.size());
         }
 
         // Фильтр по доступности
@@ -126,16 +120,13 @@ public class EventServiceImpl implements EventService {
                             && eventDtoOut.getConfirmedRequests() < eventDtoOut.getParticipantLimit())
                     .map(EventDtoOut::getId)
                     .toList();
-            log.info("Events after onlyAvailable filter, ids count: {}", ids.size());
         } else {
             ids = firstEvents.stream().map(Event::getId).toList();
-            log.info("No onlyAvailable filter applied, ids count: {}", ids.size());
         }
 
         // Фильтр по категориям и сортировка
         List<EventShortDtoOut> result;
         if (categories != null && categories.length > 0) {
-            log.info("Filtering by categories: {}", Arrays.toString(categories));
             if ("EVENT_DATE".equals(sort)) {
                 result = eventRepository.getEventsSortDateAndCategory(ids, categories, from, size).stream()
                         .map(eventMapper::mapEventToEventShortDtoOut)
@@ -147,7 +138,6 @@ public class EventServiceImpl implements EventService {
                         .toList();
             }
         } else {
-            log.info("No category filter applied");
             if ("EVENT_DATE".equals(sort)) {
                 result = eventRepository.getEventsSortDate(ids, from, size).stream()
                         .map(eventMapper::mapEventToEventShortDtoOut)
@@ -159,8 +149,6 @@ public class EventServiceImpl implements EventService {
                         .toList();
             }
         }
-
-        log.info("Final result count: {}", result.size());
         return result;
     }
 
@@ -172,7 +160,7 @@ public class EventServiceImpl implements EventService {
         if (event.getState().equals(EveState.PUBLISHED)) {
             statsClient.sendHitId(eventId);
             try {
-                Thread.sleep(1000); // Задержка 1 секунда для синхронизации
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Ошибка задержки: " + e.getMessage(), e);

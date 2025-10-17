@@ -3,18 +3,14 @@ package ru.practicum.event.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.Data;
 import ru.practicum.enums.EveState;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Data
 @Table(name = "events")
 @Entity
-@ToString
 public class Event {
     @NotBlank
     String annotation;

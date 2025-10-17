@@ -1,5 +1,6 @@
 package ru.practicum.event.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -19,6 +20,7 @@ public class EventDtoIn {
     @Length(min = 20, max = 7000)
     String description;
     @NotBlank
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     String eventDate;
     @Valid
     Location location;

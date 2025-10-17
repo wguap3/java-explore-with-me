@@ -1,5 +1,6 @@
 package ru.practicum.event.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
@@ -18,6 +19,7 @@ public class EventUpdateDtoIn {
     Long category;
     @Length(min = 20, max = 7000)
     String description;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     String eventDate;
     @Valid
     Location location;

@@ -74,7 +74,6 @@ public class EventMapper {
         eventDtoOut.setRequestModeration(event.getRequestModeration());
         eventDtoOut.setState(event.getState().toString());
         eventDtoOut.setTitle(event.getTitle());
-//        eventDtoOut.setViews(eventClient.getHits(event.getCreatedOn().format(format), LocalDateTime.now().format(format), new String[]{"/events/" + event.getId()}, true).getFirst().getHits());
         return eventDtoOut;
     }
 
@@ -88,7 +87,6 @@ public class EventMapper {
         eventShortDtoOut.setInitiator(userService.getUser(event.getInitiator()));
         eventShortDtoOut.setPaid(event.getPaid());
         eventShortDtoOut.setTitle(event.getTitle());
-//        eventShortDtoOut.setViews(eventClient.getHits(event.getCreatedOn().format(format), LocalDateTime.now().format(format), new String[]{"/events/" + event.getId()}, true).getFirst().getHits());
         return eventShortDtoOut;
     }
 

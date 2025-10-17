@@ -33,7 +33,9 @@ public class StatClient {
                 .uri("/hit")
                 .retrieve()
                 .toBodilessEntity()
-                .block();
+                .doOnSuccess(resp -> log.info("Событие отправлено"))
+                .doOnError(err -> log.error("Ошибка отправки события", err))
+                .subscribe();  // Асинхронный вызов
     }
 
     /**

@@ -31,8 +31,7 @@ CREATE TABLE IF NOT EXISTS events(
     location_lon FLOAT NOT NULL,
     paid BOOLEAN NOT NULL,
     participant_limit INTEGER DEFAULT 0,
-    request_moderation BOOLEAN DEFAULT TRUE,
-    views INTEGER
+    request_moderation BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE IF NOT EXISTS participation(
@@ -49,7 +48,7 @@ CREATE TABLE IF NOT EXISTS compilations(
     pinned BOOLEAN NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS compilation_events(
+CREATE TABLE IF NOT EXISTS compilations_events(
     compilation_id BIGINT NOT NULL REFERENCES compilations(id) ON DELETE CASCADE,
     event_id BIGINT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     PRIMARY KEY (compilation_id, event_id)

@@ -1,20 +1,19 @@
 package ru.practicum.categories.service;
 
-import ru.practicum.categories.dto.CategoryDto;
-import ru.practicum.categories.model.Category;
+import org.springframework.http.ResponseEntity;
+import ru.practicum.categories.dto.CategoryDtoIn;
+import ru.practicum.categories.dto.CategoryDtoOut;
 
 import java.util.List;
 
 public interface CategoryService {
-    CategoryDto addCategory(CategoryDto categoryDto);
+    List<CategoryDtoOut> getCategories(Integer from, Integer size);
 
-    CategoryDto update(Long categoryId, CategoryDto categoryDto);
+    CategoryDtoOut getCategory(Long catId);
 
-    CategoryDto getCategoryById(Long categoryId);
+    CategoryDtoOut addCategory(CategoryDtoIn categoryDtoIn);
 
-    List<CategoryDto> getAllCategories(int from, int size);
+    ResponseEntity<Void> deleteCategory(Long catId);
 
-    void deleteCategory(Long categoryId);
-
-    Category findByIdOrThrow(Long userId);
+    CategoryDtoOut updateCategory(Long catId, CategoryDtoIn categoryDtoIn);
 }

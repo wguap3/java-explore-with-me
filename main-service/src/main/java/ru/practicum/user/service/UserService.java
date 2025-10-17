@@ -1,20 +1,18 @@
 package ru.practicum.user.service;
 
-import ru.practicum.user.dto.UserDto;
-import ru.practicum.user.model.User;
+import org.springframework.http.ResponseEntity;
+import ru.practicum.user.dto.UserDtoIn;
+import ru.practicum.user.dto.UserDtoOut;
+import ru.practicum.user.dto.UserShortDtoOut;
 
 import java.util.List;
 
 public interface UserService {
-    UserDto addUser(UserDto userDto);
+    List<UserDtoOut> getUsers(Long[] ids, Integer from, Integer size);
 
-    UserDto findById(Long userId);
+    UserDtoOut addUser(UserDtoIn userDtoIn);
 
-    List<UserDto> getAllUsers(int from, int size);
+    ResponseEntity<Void> deleteUser(Long userId);
 
-    void deleteUser(Long userId);
-
-    User findByIdOrThrow(Long userId);
-
-    List<UserDto> getUsersByIds(List<Long> ids);
+    UserShortDtoOut getUser(Long userId);
 }

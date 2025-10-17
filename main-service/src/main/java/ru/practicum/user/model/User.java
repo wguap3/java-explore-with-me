@@ -19,7 +19,5 @@ public class User {
     private Long id;
     @Column(nullable = false)
     private String name;
-    @Column(nullable = false, unique = true, length = 255)
-    @Email(message = "Некорректный email")
     private String email;
 }

@@ -1,66 +1,56 @@
 package ru.practicum.user.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import org.mapstruct.factory.Mappers;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import ru.practicum.exception.EmailAlreadyExistsException;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
-import ru.practicum.user.dto.UserDto;
+import ru.practicum.user.dto.UserDtoIn;
+import ru.practicum.user.dto.UserDtoOut;
+import ru.practicum.user.dto.UserShortDtoOut;
 import ru.practicum.user.mapper.UserMapper;
 import ru.practicum.user.model.User;
 import ru.practicum.user.repository.UserRepository;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-
     private final UserRepository userRepository;
-    private final UserMapper userMapper;
+    UserMapper mapper = Mappers.getMapper(UserMapper.class);
 
     @Override
-    public UserDto addUser(UserDto userDto) {
-        User user = userMapper.toUser(userDto);
-
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new EmailAlreadyExistsException("Email уже используется: " + user.getEmail());
+    public List<UserDtoOut> getUsers(Long[] ids, Integer from, Integer size) {
+        if (ids == null) {
+            return userRepository.findUsersWithLimit(from, size).stream().map(mapper::mapUserToUserDtoOut).toList();
+        } else {
+            return userRepository.findUsersByIdsWithLimit(ids, from, size).stream().map(mapper::mapUserToUserDtoOut).toList();
         }
-
-        return userMapper.toUserDto(userRepository.save(user));
     }
 
-
+    @Transactional
     @Override
-    public UserDto findById(Long userId) {
-        User user = findByIdOrThrow(userId);
-        return userMapper.toUserDto(user);
+    public UserDtoOut addUser(UserDtoIn userDtoIn) {
+        if (userRepository.findByEmail(userDtoIn.getEmail()) != null) {
+            throw new ConflictException("Email пользователя должно быть уникальным!");
+        }
+        return mapper.mapUserToUserDtoOut(userRepository.save(mapper.mapUserDtoInToUser(userDtoIn)));
     }
 
-    public List<UserDto> getAllUsers(int from, int size) {
-        PageRequest page = PageRequest.of(from / size, size);
-        return userRepository.findAll(page).stream()
-                .map(userMapper::toUserDto)
-                .collect(Collectors.toList());
-    }
-
-    public List<UserDto> getUsersByIds(List<Long> ids) {
-        return userRepository.findAllById(ids)
-                .stream()
-                .map(userMapper::toUserDto)
-                .collect(Collectors.toList());
-    }
-
-
+    @Transactional
     @Override
-    public void deleteUser(Long userId) {
-        userRepository.deleteById(userId);
+    public ResponseEntity<Void> deleteUser(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User with id=" + userId + " was not found"));
+        userRepository.delete(user);
+        return ResponseEntity.noContent().build();
     }
 
     @Override
-    public User findByIdOrThrow(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
+    public UserShortDtoOut getUser(Long userId) {
+        return mapper.mapUserToUserShortDtoOut(userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User with id=" + userId + " was not found")));
     }
 }

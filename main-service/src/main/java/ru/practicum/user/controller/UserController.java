@@ -1,42 +1,45 @@
 package ru.practicum.user.controller;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.user.dto.UserDto;
+import ru.practicum.user.dto.UserDtoIn;
+import ru.practicum.user.dto.UserDtoOut;
 import ru.practicum.user.service.UserService;
 
-import javax.validation.Valid;
 import java.util.List;
 
 @RestController
+@Slf4j
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
 public class UserController {
+
     private final UserService userService;
 
     @GetMapping
-    public List<UserDto> getAllUsers(
-            @RequestParam(required = false) List<Long> ids,
-            @RequestParam(defaultValue = "0") int from,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        if (ids != null && !ids.isEmpty()) {
-            return userService.getUsersByIds(ids);
-        }
-        return userService.getAllUsers(from, size);
+    public List<UserDtoOut> getUsers(@RequestParam(name = "ids", required = false) Long[] ids,
+                                     @RequestParam(name = "from", defaultValue = "0") Integer from,
+                                     @RequestParam(name = "size", defaultValue = "10") Integer size) {
+        log.info("GET/ Проверка параметров запроса метода getUsers, ids - {}, from - {}, size - {}", ids, from, size);
+        return userService.getUsers(ids, from, size);
     }
-
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDto addUser(@Valid @RequestBody UserDto userDto) {
-        return userService.addUser(userDto);
+    public UserDtoOut addUser(@Valid @RequestBody UserDtoIn userDtoIn) {
+        log.info("POST/ Проверка параметров запроса метода addUser, userDtoIn - {}", userDtoIn);
+        return userService.addUser(userDtoIn);
     }
 
     @DeleteMapping("/{userId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteUser(@PathVariable Long userId) {
-        userService.deleteUser(userId);
+    public ResponseEntity<Void> deleteUser(@PathVariable(name = "userId") Long userId) {
+        log.info("DELETE/ Проверка параметров запроса метода deleteUser, userId - {}", userId);
+        return userService.deleteUser(userId);
     }
 }

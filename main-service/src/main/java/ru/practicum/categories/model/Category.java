@@ -1,21 +1,20 @@
 package ru.practicum.categories.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
-@Data
+@Slf4j
 @Entity
-@Table(name = "categories")
-@NoArgsConstructor
-@AllArgsConstructor
-
+@Getter
+@Setter
+@Table(name = "categories", uniqueConstraints = @UniqueConstraint(columnNames = "name"))
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "category_id")
-    private Long id;
-    @Column(nullable = false)
-    private String name;
+    Long id;
+    @NotBlank
+    String name;
 }

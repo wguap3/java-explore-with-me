@@ -6,7 +6,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
-import reactor.core.publisher.Mono;
 import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 
@@ -29,7 +28,7 @@ public class StatClient {
     /**
      * Отправка хита без ID
      */
-    public Mono<Void> sendHit(String app, String uri, String ip) {
+    public void sendHit(String app, String uri, String ip) {
         EndpointHitDto hit = new EndpointHitDto();
         hit.setApp(app);
         hit.setUri(uri);
@@ -38,21 +37,21 @@ public class StatClient {
 
         log.info("Отправка события в сервис статистики: {}", hit);
 
-        return webClient.post()
+        webClient.post()
                 .uri("/hit")
                 .bodyValue(hit)
                 .retrieve()
                 .toBodilessEntity()
                 .doOnSuccess(resp -> log.info("Событие отправлено"))
                 .doOnError(err -> log.error("Ошибка отправки события", err))
-                .then();
+                .subscribe();
     }
 
 
     /**
      * Отправка хита с конкретным ID
      */
-    public Mono<Void> sendHitId(Long id, String app, String uri, String ip) {
+    public void sendHitId(Long id, String app, String uri, String ip) {
         EndpointHitDto hit = new EndpointHitDto();
         hit.setApp(app);
         hit.setUri(uri);
@@ -62,14 +61,14 @@ public class StatClient {
         log.info("Отправка события с ID={} в сервис статистики: {}", id, hit);
 
         // Отправка POST запроса на сервер статистики
-        return webClient.post()
+        webClient.post()
                 .uri("/hit/{id}", id)  // можно указать id в URI, если ваш сервер это поддерживает
                 .bodyValue(hit)        // обязательно тело запроса
                 .retrieve()
                 .toBodilessEntity()
                 .doOnSuccess(resp -> log.info("Событие с ID={} отправлено успешно", id))
                 .doOnError(err -> log.error("Ошибка отправки события с ID={}", id, err))
-                .then();          // асинхронный вызов
+                .subscribe();          // асинхронный вызов
     }
 
 

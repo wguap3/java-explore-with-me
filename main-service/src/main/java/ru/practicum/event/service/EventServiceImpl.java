@@ -81,7 +81,6 @@ public class EventServiceImpl implements EventService {
         log.info("getPublicEvent called with parameters: text='{}', categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
 
-        statsClient.sendHit();
 
         String lowText = text.toLowerCase().replace("\"", "");
 
@@ -158,7 +157,7 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.getPublicEventById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
         if (event.getState().equals(EveState.PUBLISHED)) {
-            statsClient.sendHitId(eventId);
+
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {

@@ -6,6 +6,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
+import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 
 import java.time.LocalDateTime;
@@ -27,31 +28,49 @@ public class StatClient {
     /**
      * Отправка хита без ID
      */
-    public void sendHit() {
-        log.info("Отправка события в сервис статистики (без ID)");
+    public void sendHit(String app, String uri, String ip) {
+        EndpointHitDto hit = new EndpointHitDto();
+        hit.setApp(app);
+        hit.setUri(uri);
+        hit.setIp(ip);
+        hit.setTimestamp(LocalDateTime.now());
+
+        log.info("Отправка события в сервис статистики: {}", hit);
+
         webClient.post()
                 .uri("/hit")
+                .bodyValue(hit)
                 .retrieve()
                 .toBodilessEntity()
                 .doOnSuccess(resp -> log.info("Событие отправлено"))
                 .doOnError(err -> log.error("Ошибка отправки события", err))
-                .subscribe();  // Асинхронный вызов
+                .subscribe();
     }
+
 
     /**
      * Отправка хита с конкретным ID
      */
-    public void sendHitId(Long id) {
-        log.info("Отправка события с ID={} в сервис статистики", id);
+    public void sendHitId(Long id, String app, String uri, String ip) {
+        EndpointHitDto hit = new EndpointHitDto();
+        hit.setApp(app);
+        hit.setUri(uri);
+        hit.setIp(ip);
+        hit.setTimestamp(LocalDateTime.now());
 
+        log.info("Отправка события с ID={} в сервис статистики: {}", id, hit);
+
+        // Отправка POST запроса на сервер статистики
         webClient.post()
-                .uri("/hit/{id}", id)
+                .uri("/hit/{id}", id)  // можно указать id в URI, если ваш сервер это поддерживает
+                .bodyValue(hit)        // обязательно тело запроса
                 .retrieve()
                 .toBodilessEntity()
                 .doOnSuccess(resp -> log.info("Событие с ID={} отправлено успешно", id))
-                .doOnError(e -> log.error("Ошибка отправки события с ID={}", id, e))
-                .subscribe();
+                .doOnError(err -> log.error("Ошибка отправки события с ID={}", id, err))
+                .subscribe();          // асинхронный вызов
     }
+
 
     /**
      * Получение статистики

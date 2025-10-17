@@ -12,19 +12,21 @@ import ru.practicum.event.service.EventService;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
-public interface CompilationsMapper {
+public abstract class CompilationsMapper {
 
     @Autowired
-    EventService eventService = null;
+    protected EventService eventService;
 
     @Autowired
-    JdbcTemplate jdbcTemplate = null;
+    protected JdbcTemplate jdbcTemplate;
 
+    // MapStruct сгенерирует реализацию для этого метода
     @Mapping(target = "pinned", expression = "java(compilationsDtoIn.getPinned() != null ? compilationsDtoIn.getPinned() : false)")
     @Mapping(target = "title", source = "title")
-    Compilations mapCompilationsDtoInToCompilations(CompilationsDtoIn compilationsDtoIn);
+    public abstract Compilations mapCompilationsDtoInToCompilations(CompilationsDtoIn compilationsDtoIn);
 
-    default CompilationsDtoOut mapCompilationsToCompilationsDtoOut(Compilations compilations) {
+    // default метод с телом, может использовать jdbcTemplate и eventService
+    public CompilationsDtoOut mapCompilationsToCompilationsDtoOut(Compilations compilations) {
         CompilationsDtoOut dto = new CompilationsDtoOut();
 
         List<Long> eventIds = jdbcTemplate.query(

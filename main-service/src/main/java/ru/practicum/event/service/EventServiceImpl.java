@@ -82,7 +82,6 @@ public class EventServiceImpl implements EventService {
         String lowText = text.toLowerCase();
         lowText = lowText.replace("\"", "");
         List<Event> events;
-        //сначала делаем выборку по датам и содержанию текста
         if (rangeStart != null && rangeEnd != null) {
             if (parseDate(rangeStart).isAfter(parseDate(rangeEnd))) {
                 throw new BadRequestException("Дата начала события позже даты конца события!");

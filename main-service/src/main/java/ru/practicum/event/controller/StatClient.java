@@ -1,7 +1,7 @@
 package ru.practicum.event.controller;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
@@ -19,11 +19,11 @@ import java.util.List;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class StatClient {
 
     private final WebClient webClient;
 
+    @Autowired
     public StatClient(WebClient.Builder webClientBuilder, @Value("${client.url}") String gatewayUrl) {
         this.webClient = webClientBuilder.baseUrl(gatewayUrl)
                 .filter((request, next) -> next.exchange(request)

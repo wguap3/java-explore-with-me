@@ -10,6 +10,7 @@ import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 
@@ -63,11 +64,15 @@ public class StatClient {
     /**
      * Получение статистики просмотров
      */
-    public List<ViewStatsDto> getStats(String start, String end, List<String> uris, boolean unique) {
+    public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
         try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            String startStr = start.format(formatter);
+            String endStr = end.format(formatter);
+
             UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/stats")
-                    .queryParam("start", start)
-                    .queryParam("end", end)
+                    .queryParam("start", startStr.replace(" ", "%20"))  // заменяем пробел на %20
+                    .queryParam("end", endStr.replace(" ", "%20"))
                     .queryParam("unique", unique);
 
             if (uris != null) {
@@ -76,8 +81,7 @@ public class StatClient {
                 }
             }
 
-            String uri = builder.build().toUriString();
-
+            String uri = builder.build(false).toUriString();
             log.info("Запрос статистики по URI: {}", uri);
 
             return webClient.get()
@@ -92,6 +96,8 @@ public class StatClient {
             return Collections.emptyList();
         }
     }
+
+
 }
 
 

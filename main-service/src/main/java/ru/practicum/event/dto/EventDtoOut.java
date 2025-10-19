@@ -31,5 +31,5 @@ public class EventDtoOut {
     String state;
     @NotBlank
     String title;
-    Integer views;
+    Long views;
 }

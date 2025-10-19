@@ -191,7 +191,7 @@ public class EventServiceImpl implements EventService {
             eventDtoOut.setViews(stats.isEmpty() ? 0 : stats.get(0).getHits());
         } catch (Exception ex) {
             log.error("Ошибка получения просмотров для события id={}", eventId, ex);
-            eventDtoOut.setViews(0);
+            eventDtoOut.setViews(0L);
         }
         return eventDtoOut;
     }

@@ -19,6 +19,6 @@ public class EventShortDtoOut {
     @NotNull
     Boolean paid;
     String title;
-    Integer views;
+    Long views;
 
 }

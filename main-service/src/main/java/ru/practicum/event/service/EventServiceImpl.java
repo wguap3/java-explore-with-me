@@ -80,6 +80,7 @@ public class EventServiceImpl implements EventService {
         log.info("getPublicEvent called with parameters: text='{}', categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
 
+
         String lowText = text.toLowerCase().replace("\"", "");
 
         List<Event> events;
@@ -175,7 +176,6 @@ public class EventServiceImpl implements EventService {
             eventDtoOut.setViews(0L);
         }
         return eventDtoOut;
-
     }
 
     @Override

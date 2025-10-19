@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
+import ru.practicum.exception.BadRequest;
 import ru.practicum.mapper.StatsMapper;
 import ru.practicum.model.EndpointHitEntity;
 import ru.practicum.repository.StatsRepository;
@@ -28,6 +29,9 @@ public class StatsServiceImpl implements StatsService {
                                        LocalDateTime end,
                                        List<String> uris,
                                        boolean unique) {
+        if (end.isBefore(start)) {
+            throw new BadRequest("Дата начала позже, чем дата конца!");
+        }
         if (unique) {
             return repository.getUniqueStats(start, end, uris);
         } else {

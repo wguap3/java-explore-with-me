@@ -23,6 +23,7 @@ import ru.practicum.exception.NotFoundException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -167,8 +168,11 @@ public class EventServiceImpl implements EventService {
         String start = eventDtoOut.getCreatedOn();
         String end = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         String[] uris = {"/events/" + event.getId()};
+        LocalDateTime startTime = LocalDateTime.parse(start, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime endTime = LocalDateTime.parse(end, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        List<String> uriList = Arrays.asList(uris);
 
-        List<ViewStatsDto> stats = statsClient.getHits(start, end, uris, true);
+        List<ViewStatsDto> stats = statsClient.getStats(startTime, endTime, uriList, true);
 
         if (stats != null && !stats.isEmpty()) {
             eventDtoOut.setViews(stats.get(0).getHits());

@@ -5,11 +5,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriBuilder;
-import ru.practicum.dto.EndpointHitDto;
+import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Mono;
 import ru.practicum.dto.ViewStatsDto;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -18,79 +17,46 @@ public class StatClient {
 
     private final WebClient webClient;
 
-    public StatClient(WebClient.Builder webClientBuilder,
-                      @Value("${stats-service.url}") String statsServiceUrl) {
-        this.webClient = webClientBuilder
-                .baseUrl(statsServiceUrl)
+    public StatClient(WebClient.Builder webClientBuilder, @Value("${client.url}") String gatewayUrl) {
+        this.webClient = webClientBuilder.baseUrl(gatewayUrl)
+                .filter((request, next) -> next.exchange(request)
+                        .flatMap(response -> {
+                            if (response.statusCode().isError()) {
+                                return response.bodyToMono(String.class)
+                                        .flatMap(body -> {
+                                            return Mono.error(new ResponseStatusException(response.statusCode(), body));
+                                        });
+                            }
+                            return Mono.just(response);
+                        }))
                 .build();
     }
 
-    /**
-     * Отправка хита без ID
-     */
-    public void sendHit(String app, String uri, String ip) {
-        EndpointHitDto hit = new EndpointHitDto();
-        hit.setApp(app);
-        hit.setUri(uri);
-        hit.setIp(ip);
-        hit.setTimestamp(LocalDateTime.now());
-
-        log.info("Отправка события в сервис статистики: {}", hit);
-
+    public void sendHitId(Long id) {
+        log.info("Отправка данных о событии с ID {} в гейтвей статистики", id);
         webClient.post()
-                .uri("/hit")
-                .bodyValue(hit)
-                .retrieve()
-                .toBodilessEntity()
-                .doOnSuccess(resp -> log.info("Событие отправлено"))
-                .doOnError(err -> log.error("Ошибка отправки события", err))
-                .subscribe();
+                .uri(uriBuilder -> uriBuilder.path("/events/{id}").build(id))
+                .exchangeToMono(response -> response.toEntity(Void.class))
+                .block();
     }
 
-
-    /**
-     * Отправка хита с конкретным ID
-     */
-    public void sendHitId(Long id, String app, String uri, String ip) {
-        EndpointHitDto hit = new EndpointHitDto();
-        hit.setApp(app);
-        hit.setUri(uri);
-        hit.setIp(ip);
-        hit.setTimestamp(LocalDateTime.now());
-
-        log.info("Отправка события с ID={} в сервис статистики: {}", id, hit);
-
-        // Отправка POST запроса на сервер статистики
+    public void sendHit() {
+        log.info("Отправка данных о событии в гейтвей статистики");
         webClient.post()
-                .uri("/hit/{id}", id)  // можно указать id в URI, если ваш сервер это поддерживает
-                .bodyValue(hit)        // обязательно тело запроса
-                .retrieve()
-                .toBodilessEntity()
-                .doOnSuccess(resp -> log.info("Событие с ID={} отправлено успешно", id))
-                .doOnError(err -> log.error("Ошибка отправки события с ID={}", id, err))
-                .subscribe();          // асинхронный вызов
+                .uri(uriBuilder -> uriBuilder.path("/events").build())
+                .exchangeToMono(response -> response.toEntity(Void.class))
+                .block();
     }
 
-
-    /**
-     * Получение статистики
-     */
-    public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end,
-                                       List<String> uris, boolean unique) {
-        log.info("Запрос статистики: start={}, end={}, uris={}, unique={}", start, end, uris, unique);
-
-
+    public List<ViewStatsDto> getHits(String start, String end, String[] uris, Boolean unique) {
+        log.info("Запрос данных о событии из гейтвея статистики {}, {} , {} ,{}", start, end, uris, unique);
         return webClient.get()
-                .uri(uriBuilder -> {
-                    UriBuilder builder = uriBuilder.path("/stats")
-                            .queryParam("start", start)
-                            .queryParam("end", end)
-                            .queryParam("unique", unique);
-                    if (uris != null && !uris.isEmpty()) {
-                        uris.forEach(uri -> builder.queryParam("uris", uri));
-                    }
-                    return builder.build();
-                })
+                .uri(uriBuilder -> uriBuilder.path("/events/stats")
+                        .queryParam("start", start)
+                        .queryParam("end", end)
+                        .queryParam("uris", uris)
+                        .queryParam("unique", unique)
+                        .build())
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<ViewStatsDto>>() {
                 })

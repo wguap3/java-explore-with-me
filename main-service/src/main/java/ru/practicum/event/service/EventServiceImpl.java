@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.dto.ViewStatsDto;
 import ru.practicum.enums.EveState;
 import ru.practicum.enums.StateAction;
 import ru.practicum.event.controller.StatClient;
@@ -23,7 +22,6 @@ import ru.practicum.exception.NotFoundException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -81,7 +79,7 @@ public class EventServiceImpl implements EventService {
         log.info("getPublicEvent called with parameters: text='{}', categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
 
-
+        statsClient.sendHit();
         String lowText = text.toLowerCase().replace("\"", "");
 
         List<Event> events;
@@ -151,15 +149,14 @@ public class EventServiceImpl implements EventService {
         return result;
     }
 
-
     @Override
     public EventDtoOut getPublicEventById(Long eventId) {
         Event event = eventRepository.getPublicEventById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
         if (event.getState().equals(EveState.PUBLISHED)) {
-
+            statsClient.sendHitId(eventId);
             try {
-                Thread.sleep(1000);
+                Thread.sleep(1000); // Задержка 1 секунда для синхронизации
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Ошибка задержки: " + e.getMessage(), e);
@@ -169,19 +166,10 @@ public class EventServiceImpl implements EventService {
         String start = eventDtoOut.getCreatedOn();
         String end = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         String[] uris = {"/events/" + event.getId()};
-        LocalDateTime startTime = LocalDateTime.parse(start, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        LocalDateTime endTime = LocalDateTime.parse(end, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        List<String> uriList = Arrays.asList(uris);
-
-        List<ViewStatsDto> stats = statsClient.getStats(startTime, endTime, uriList, true);
-
-        if (stats != null && !stats.isEmpty()) {
-            eventDtoOut.setViews(stats.get(0).getHits().intValue());
-        } else {
-            eventDtoOut.setViews(0);
-        }
+        eventDtoOut.setViews(statsClient.getHits(start, end, uris, true).getFirst().getHits());
         return eventDtoOut;
     }
+
 
     @Override
     public List<EventDtoOut> getAdminEvent(Long[] users, String[] states, Long[] categories, String rangeStart, String rangeEnd, Integer from, Integer size) {

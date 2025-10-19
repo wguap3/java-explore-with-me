@@ -66,7 +66,7 @@ public class StatClient {
      */
     public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
             UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/stats")
                     .queryParam("start", start.format(formatter))

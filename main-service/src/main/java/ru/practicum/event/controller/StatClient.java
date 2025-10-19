@@ -66,13 +66,12 @@ public class StatClient {
      */
     public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
             UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/stats")
                     .queryParam("start", start.format(formatter))
                     .queryParam("end", end.format(formatter))
                     .queryParam("unique", unique);
-
             if (uris != null && !uris.isEmpty()) {
                 uris.forEach(u -> builder.queryParam("uris", u));
             }

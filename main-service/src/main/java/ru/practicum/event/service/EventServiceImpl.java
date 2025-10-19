@@ -185,7 +185,7 @@ public class EventServiceImpl implements EventService {
             log.error("Ошибка отправки статистики для события id={}", eventId, ex);
         }
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
             LocalDateTime startTime = LocalDateTime.parse(eventDtoOut.getCreatedOn(), formatter);
             LocalDateTime endTime = LocalDateTime.now();
             List<String> uris = Collections.singletonList("/events/" + eventId);

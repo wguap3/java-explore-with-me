@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.dto.ViewStatsDto;
 import ru.practicum.enums.EveState;
 import ru.practicum.enums.StateAction;
 import ru.practicum.event.controller.StatClient;
@@ -77,77 +76,56 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDtoOut> getPublicEvent(String text, Long[] categories, Boolean paid, String rangeStart, String rangeEnd, Boolean onlyAvailable, String sort, Integer from, Integer size) {
-        log.info("getPublicEvent called with parameters: text='{}', categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
-                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
-
         statsClient.sendHit();
-        String lowText = text.toLowerCase().replace("\"", "");
-
+        String lowText = text.toLowerCase();
+        lowText = lowText.replace("\"", "");
         List<Event> events;
+        //сначала делаем выборку по датам и содержанию текста
         if (rangeStart != null && rangeEnd != null) {
             if (parseDate(rangeStart).isAfter(parseDate(rangeEnd))) {
                 throw new BadRequestException("Дата начала события позже даты конца события!");
             }
             events = eventRepository.getPublicEventByTextAndStartAndEnd(lowText, parseDate(rangeStart), parseDate(rangeEnd));
-        } else if (rangeStart != null) {
+        } else if (rangeStart != null && rangeEnd == null) {
             events = eventRepository.getPublicEventByTextAndStart(lowText, parseDate(rangeStart));
-        } else if (rangeEnd != null) {
+        } else if (rangeStart == null && rangeEnd != null) {
             events = eventRepository.getPublicEventByTextAndEnd(lowText, parseDate(rangeEnd));
         } else {
             events = eventRepository.getPublicEventByText(lowText);
         }
-
-        // Фильтр по оплате
+        //фильтруем по оплате
         List<Event> firstEvents;
         if (paid != null) {
-            firstEvents = events.stream().filter(event -> event.getPaid() != null && event.getPaid().equals(paid)).toList();
-
+            firstEvents = events.stream().filter(event -> event.getPaid().equals(paid)).toList();
         } else {
             firstEvents = events;
         }
-
-        // Фильтр по доступности
+        //фильтруем по лимиту запросов на участие
         List<Long> ids;
-        if (onlyAvailable != null && onlyAvailable) {
-            List<EventDtoOut> nextEvents = firstEvents.stream()
-                    .map(eventMapper::mapEventToEventDtoOut)
-                    .toList();
-            ids = nextEvents.stream()
-                    .filter(eventDtoOut -> eventDtoOut.getConfirmedRequests() != null
-                            && eventDtoOut.getParticipantLimit() != null
-                            && eventDtoOut.getConfirmedRequests() < eventDtoOut.getParticipantLimit())
-                    .map(EventDtoOut::getId)
-                    .toList();
+        if (onlyAvailable) {
+            List<EventDtoOut> nextEvents = firstEvents.stream().map(eventMapper::mapEventToEventDtoOut).toList();
+            ids = nextEvents.stream().filter(eventDtoOut -> eventDtoOut.getConfirmedRequests() < eventDtoOut.getParticipantLimit())
+                    .map(EventDtoOut::getId).toList();
         } else {
             ids = firstEvents.stream().map(Event::getId).toList();
         }
-
-        // Фильтр по категориям и сортировка
-        List<EventShortDtoOut> result;
-        if (categories != null && categories.length > 0) {
-            if ("EVENT_DATE".equals(sort)) {
-                result = eventRepository.getEventsSortDateAndCategory(ids, categories, from, size).stream()
-                        .map(eventMapper::mapEventToEventShortDtoOut)
-                        .toList();
+        //фильтруем по категориям
+        if (categories != null) {
+            //сразу делаем сортировку и выборку
+            if (sort != null && sort.equals("EVENT_DATE")) {
+                return eventRepository.getEventsSortDateAndCategory(ids, categories, from, size).stream().map(eventMapper::mapEventToEventShortDtoOut).toList();
             } else {
-                result = eventRepository.getEventsSortViewsAndCategory(ids, categories, from, size).stream()
-                        .map(eventMapper::mapEventToEventShortDtoOut)
-                        .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
-                        .toList();
+                return eventRepository.getEventsSortViewsAndCategory(ids, categories, from, size).stream().map(eventMapper::mapEventToEventShortDtoOut)
+                        .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed()).toList();
             }
         } else {
-            if ("EVENT_DATE".equals(sort)) {
-                result = eventRepository.getEventsSortDate(ids, from, size).stream()
-                        .map(eventMapper::mapEventToEventShortDtoOut)
-                        .toList();
+            if (sort != null && sort.equals("EVENT_DATE")) {
+                return eventRepository.getEventsSortDate(ids, from, size).stream().map(eventMapper::mapEventToEventShortDtoOut).toList();
             } else {
-                result = eventRepository.getEventsSortViews(ids, from, size).stream()
-                        .map(eventMapper::mapEventToEventShortDtoOut)
-                        .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
-                        .toList();
+                return eventRepository.getEventsSortViews(ids, from, size).stream().map(eventMapper::mapEventToEventShortDtoOut)
+                        .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed()).toList();
             }
         }
-        return result;
     }
 
 
@@ -158,7 +136,7 @@ public class EventServiceImpl implements EventService {
         if (event.getState().equals(EveState.PUBLISHED)) {
             statsClient.sendHitId(eventId);
             try {
-                Thread.sleep(1000);
+                Thread.sleep(1000); // Задержка 1 секунда для синхронизации
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Ошибка задержки: " + e.getMessage(), e);
@@ -168,16 +146,8 @@ public class EventServiceImpl implements EventService {
         String start = eventDtoOut.getCreatedOn();
         String end = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         String[] uris = {"/events/" + event.getId()};
-
-        List<ViewStatsDto> stats = statsClient.getHits(start, end, uris, true);
-
-        if (stats != null && !stats.isEmpty()) {
-            eventDtoOut.setViews(stats.get(0).getHits());
-        } else {
-            eventDtoOut.setViews(0L);
-        }
+        eventDtoOut.setViews(statsClient.getHits(start, end, uris, true).getFirst().getHits());
         return eventDtoOut;
-
     }
 
     @Override

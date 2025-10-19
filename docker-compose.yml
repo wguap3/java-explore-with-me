@@ -19,9 +19,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/explore
       SPRING_DATASOURCE_USERNAME: explore_user
       SPRING_DATASOURCE_PASSWORD: password
-      stats-service.url: http://stats-server:9090
+      SERVER_URL: http://main-service:8080
+      GATEWAY_URL: http://stats-server:9090
     depends_on:
       - postgres-db
+      - stats-server
 
   postgres-db:
     image: postgres:15

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.dto.ViewStatsDto;
 import ru.practicum.enums.EveState;
 import ru.practicum.enums.StateAction;
 import ru.practicum.event.controller.StatClient;
@@ -149,6 +150,7 @@ public class EventServiceImpl implements EventService {
         return result;
     }
 
+
     @Override
     public EventDtoOut getPublicEventById(Long eventId) {
         Event event = eventRepository.getPublicEventById(eventId)
@@ -156,7 +158,7 @@ public class EventServiceImpl implements EventService {
         if (event.getState().equals(EveState.PUBLISHED)) {
             statsClient.sendHitId(eventId);
             try {
-                Thread.sleep(1000); // Задержка 1 секунда для синхронизации
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Ошибка задержки: " + e.getMessage(), e);
@@ -166,10 +168,17 @@ public class EventServiceImpl implements EventService {
         String start = eventDtoOut.getCreatedOn();
         String end = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         String[] uris = {"/events/" + event.getId()};
-        eventDtoOut.setViews(statsClient.getHits(start, end, uris, true).getFirst().getHits());
-        return eventDtoOut;
-    }
 
+        List<ViewStatsDto> stats = statsClient.getHits(start, end, uris, true);
+
+        if (stats != null && !stats.isEmpty()) {
+            eventDtoOut.setViews(stats.get(0).getHits());
+        } else {
+            eventDtoOut.setViews(0L);
+        }
+        return eventDtoOut;
+
+    }
 
     @Override
     public List<EventDtoOut> getAdminEvent(Long[] users, String[] states, Long[] categories, String rangeStart, String rangeEnd, Integer from, Integer size) {

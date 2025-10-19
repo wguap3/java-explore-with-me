@@ -39,17 +39,33 @@ public class EventServiceImpl implements EventService {
 
     @Transactional
     @Override
-    public EventDtoOut addEvent(Long userId, EventDtoIn eventDtoIn) {
+    public EventDtoOut addEvent(Long userId, EventDtoIn eventDtoIn, HttpServletRequest request) {
         Event event = eventMapper.mapEventDtoInToEvent(eventDtoIn);
+
         checkValidTime(event.getEventDate(), 2, "Дата и время на которые намечено событие не может быть раньше, чем 2 часа от текущего момента");
+
         event.setInitiator(userId);
-        return eventMapper.mapEventToEventDtoOut(eventRepository.save(event));
+
+        Event savedEvent = eventRepository.save(event);
+
+        try {
+            statsClient.sendHitId(
+                    savedEvent.getId(),
+                    "main-service",
+                    "/events",
+                    request.getRemoteAddr()
+            );
+        } catch (Exception ex) {
+            log.error("Ошибка отправки статистики для события id={}", savedEvent.getId(), ex);
+        }
+
+        return eventMapper.mapEventToEventDtoOut(savedEvent);
     }
+
 
     @Override
     public List<EventShortDtoOut> getEvents(Long userId, Integer from, Integer size) {
         return eventRepository.getEvents(userId, from, size).stream().map(eventMapper::mapEventToEventShortDtoOut).toList();
-        // .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed()).toList();
     }
 
     @Override

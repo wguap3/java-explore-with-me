@@ -9,6 +9,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -65,19 +67,20 @@ public class StatClient {
      */
     public List<ViewStatsDto> getStats(String start, String end, List<String> uris, boolean unique) {
         try {
+            // Используем корректный путь с ведущим слэшем
             UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/stats")
-                    .queryParam("start", start)
-                    .queryParam("end", end)
+                    .queryParam("start", URLEncoder.encode(start, StandardCharsets.UTF_8))
+                    .queryParam("end", URLEncoder.encode(end, StandardCharsets.UTF_8))
                     .queryParam("unique", unique);
 
+            // Кодируем каждый URI отдельно
             if (uris != null) {
                 for (String u : uris) {
-                    builder.queryParam("uris", u);
+                    builder.queryParam("uris", URLEncoder.encode(u, StandardCharsets.UTF_8));
                 }
             }
 
             String uri = builder.build().toUriString();
-
             log.info("Запрос статистики по URI: {}", uri);
 
             return webClient.get()
@@ -92,6 +95,7 @@ public class StatClient {
             return Collections.emptyList();
         }
     }
+
 }
 
 

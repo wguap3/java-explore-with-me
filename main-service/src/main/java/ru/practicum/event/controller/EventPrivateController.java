@@ -1,5 +1,6 @@
 package ru.practicum.event.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,9 +29,9 @@ public class EventPrivateController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public EventDtoOut addEvent(@PathVariable(name = "userId") Long userId,
-                                @Valid @RequestBody EventDtoIn eventDtoIn) {
+                                @Valid @RequestBody EventDtoIn eventDtoIn, HttpServletRequest request) {
         log.info("POST/ Проверка параметров запроса метода addEvent, userId - {}, eventDtoIn - {}", userId, eventDtoIn);
-        return eventService.addEvent(userId, eventDtoIn);
+        return eventService.addEvent(userId, eventDtoIn, request);
     }
 
     @GetMapping

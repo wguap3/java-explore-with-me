@@ -10,7 +10,7 @@ import ru.practicum.event.dto.EventUpdateDtoIn;
 import java.util.List;
 
 public interface EventService {
-    EventDtoOut addEvent(Long userId, EventDtoIn eventDtoIn);
+    EventDtoOut addEvent(Long userId, EventDtoIn eventDtoIn, HttpServletRequest request);
 
     List<EventShortDtoOut> getEvents(Long userId, Integer from, Integer size);
 

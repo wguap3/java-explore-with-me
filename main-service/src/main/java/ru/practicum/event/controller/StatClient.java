@@ -9,6 +9,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -67,28 +69,27 @@ public class StatClient {
     public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            String startStr = start.format(formatter);
-            String endStr = end.format(formatter);
 
-            UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/stats")
-                    .queryParam("start", startStr.replace(" ", "%20"))  // заменяем пробел на %20
-                    .queryParam("end", endStr.replace(" ", "%20"))
-                    .queryParam("unique", unique);
+            // Формируем URI вручную, чтобы пробел заменялся на '+'
+            StringBuilder uriBuilder = new StringBuilder("/stats?")
+                    .append("start=").append(URLEncoder.encode(start.format(formatter), StandardCharsets.UTF_8))
+                    .append("&end=").append(URLEncoder.encode(end.format(formatter), StandardCharsets.UTF_8))
+                    .append("&unique=").append(unique);
 
-            if (uris != null) {
+            if (uris != null && !uris.isEmpty()) {
                 for (String u : uris) {
-                    builder.queryParam("uris", u);
+                    uriBuilder.append("&uris=").append(URLEncoder.encode(u, StandardCharsets.UTF_8));
                 }
             }
 
-            String uri = builder.build(false).toUriString();
+            String uri = uriBuilder.toString().replace("%20", "+");
+
             log.info("Запрос статистики по URI: {}", uri);
 
             return webClient.get()
                     .uri(uri)
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<List<ViewStatsDto>>() {
-                    })
+                    .bodyToMono(new ParameterizedTypeReference<List<ViewStatsDto>>() {})
                     .block();
 
         } catch (Exception ex) {
@@ -99,6 +100,7 @@ public class StatClient {
 
 
 }
+
 
 
 

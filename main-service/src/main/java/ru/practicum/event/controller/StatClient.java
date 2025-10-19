@@ -9,8 +9,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -68,14 +66,12 @@ public class StatClient {
      */
     public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-            String encodedStart = URLEncoder.encode(start.format(formatter), StandardCharsets.UTF_8);
-            String encodedEnd = URLEncoder.encode(end.format(formatter), StandardCharsets.UTF_8);
+            // Формат ISO без ручного кодирования
+            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
             UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/stats")
-                    .queryParam("start", encodedStart)
-                    .queryParam("end", encodedEnd)
+                    .queryParam("start", start.format(formatter))
+                    .queryParam("end", end.format(formatter))
                     .queryParam("unique", unique);
 
             if (uris != null && !uris.isEmpty()) {
@@ -97,7 +93,6 @@ public class StatClient {
             return Collections.emptyList();
         }
     }
-
 
 }
 

@@ -185,10 +185,13 @@ public class EventServiceImpl implements EventService {
             log.error("Ошибка отправки статистики для события id={}", eventId, ex);
         }
         try {
-            String start = eventDtoOut.getCreatedOn(); // дата создания события
-            String end = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            LocalDateTime startTime = LocalDateTime.parse(eventDtoOut.getCreatedOn(), formatter);
+            LocalDateTime endTime = LocalDateTime.now();
             List<String> uris = Collections.singletonList("/events/" + eventId);
-            List<ViewStatsDto> stats = statsClient.getStats(start, end, uris, true);
+
+            List<ViewStatsDto> stats = statsClient.getStats(startTime, endTime, uris, true);
+
             eventDtoOut.setViews(stats.isEmpty() ? 0 : stats.get(0).getHits());
         } catch (Exception ex) {
             log.error("Ошибка получения просмотров для события id={}", eventId, ex);

@@ -47,6 +47,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: password
       SERVER_URL: http://main-service:8080
       GATEWAY_URL: http://stats-server:9090
+      client.url=${GATEWAY_URL}:
     depends_on:
       - postgres-main
       - stats-server

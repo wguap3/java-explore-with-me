@@ -23,6 +23,7 @@ import ru.practicum.exception.NotFoundException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -156,6 +157,7 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.getPublicEventById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
         if (event.getState().equals(EveState.PUBLISHED)) {
+
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -166,12 +168,18 @@ public class EventServiceImpl implements EventService {
         EventDtoOut eventDtoOut = eventMapper.mapEventToEventDtoOut(event);
         String start = eventDtoOut.getCreatedOn();
         String end = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        List<String> uriList = List.of("/events/" + event.getId());
+        String[] uris = {"/events/" + event.getId()};
         LocalDateTime startTime = LocalDateTime.parse(start, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         LocalDateTime endTime = LocalDateTime.parse(end, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        List<String> uriList = Arrays.asList(uris);
 
         List<ViewStatsDto> stats = statsClient.getStats(startTime, endTime, uriList, true);
-        eventDtoOut.setViews(0L);
+
+        if (stats != null && !stats.isEmpty()) {
+            eventDtoOut.setViews(stats.get(0).getHits().intValue());
+        } else {
+            eventDtoOut.setViews(0);
+        }
         return eventDtoOut;
     }
 

@@ -171,12 +171,7 @@ public class EventServiceImpl implements EventService {
         LocalDateTime endTime = LocalDateTime.parse(end, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         List<ViewStatsDto> stats = statsClient.getStats(startTime, endTime, uriList, true);
-
-        if (stats != null && !stats.isEmpty()) {
-            eventDtoOut.setViews(stats.get(0).getHits() != null ? stats.get(0).getHits() : 0L);
-        } else {
-            eventDtoOut.setViews(0L);
-        }
+        eventDtoOut.setViews(0L);
         return eventDtoOut;
     }
 

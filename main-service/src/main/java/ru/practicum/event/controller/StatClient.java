@@ -9,6 +9,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -66,12 +68,14 @@ public class StatClient {
      */
     public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
         try {
-            // Формат ISO без ручного кодирования
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            String encodedStart = URLEncoder.encode(start.format(formatter), StandardCharsets.UTF_8); // -> 2020-05-05+00%3A00%3A00
+            String encodedEnd = URLEncoder.encode(end.format(formatter), StandardCharsets.UTF_8);     // -> 2035-05-05+00%3A00%3A00
 
             UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/stats")
-                    .queryParam("start", start.format(formatter))
-                    .queryParam("end", end.format(formatter))
+                    .queryParam("start", encodedStart)
+                    .queryParam("end", encodedEnd)
                     .queryParam("unique", unique);
 
             if (uris != null && !uris.isEmpty()) {
@@ -80,6 +84,7 @@ public class StatClient {
 
             String uri = builder.toUriString();
             log.info("Запрос статистики по URI: {}", uri);
+
 
             return webClient.get()
                     .uri(uri)

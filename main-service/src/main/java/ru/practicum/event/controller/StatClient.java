@@ -53,24 +53,23 @@ public class StatClient {
      */
     public void sendHitId(Long id, String app, String uri, String ip) {
         EndpointHitDto hit = new EndpointHitDto();
+        hit.setId(id);
         hit.setApp(app);
         hit.setUri(uri);
         hit.setIp(ip);
         hit.setTimestamp(LocalDateTime.now());
 
-        log.info("Отправка события с ID={} в сервис статистики: {}", id, hit);
+        log.info("Отправка события в сервис статистики: {}", hit);
 
-        // Отправка POST запроса на сервер статистики
         webClient.post()
-                .uri("/hit/{id}", id)  // можно указать id в URI, если ваш сервер это поддерживает
-                .bodyValue(hit)        // обязательно тело запроса
+                .uri("/hit")
+                .bodyValue(hit)
                 .retrieve()
                 .toBodilessEntity()
                 .doOnSuccess(resp -> log.info("Событие с ID={} отправлено успешно", id))
                 .doOnError(err -> log.error("Ошибка отправки события с ID={}", id, err))
-                .subscribe();          // асинхронный вызов
+                .subscribe();
     }
-
 
     /**
      * Получение статистики

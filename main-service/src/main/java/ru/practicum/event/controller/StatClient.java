@@ -70,26 +70,26 @@ public class StatClient {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-            // Формируем URI вручную, чтобы пробел заменялся на '+'
-            StringBuilder uriBuilder = new StringBuilder("/stats?")
-                    .append("start=").append(URLEncoder.encode(start.format(formatter), StandardCharsets.UTF_8))
-                    .append("&end=").append(URLEncoder.encode(end.format(formatter), StandardCharsets.UTF_8))
-                    .append("&unique=").append(unique);
+            String encodedStart = URLEncoder.encode(start.format(formatter), StandardCharsets.UTF_8);
+            String encodedEnd = URLEncoder.encode(end.format(formatter), StandardCharsets.UTF_8);
+
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl("http://stats-server:9090/stats")
+                    .queryParam("start", encodedStart)
+                    .queryParam("end", encodedEnd)
+                    .queryParam("unique", unique);
 
             if (uris != null && !uris.isEmpty()) {
-                for (String u : uris) {
-                    uriBuilder.append("&uris=").append(URLEncoder.encode(u, StandardCharsets.UTF_8));
-                }
+                uris.forEach(u -> builder.queryParam("uris", u));
             }
 
-            String uri = uriBuilder.toString().replace("%20", "+");
-
+            String uri = builder.toUriString();
             log.info("Запрос статистики по URI: {}", uri);
 
             return webClient.get()
                     .uri(uri)
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<List<ViewStatsDto>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<List<ViewStatsDto>>() {
+                    })
                     .block();
 
         } catch (Exception ex) {

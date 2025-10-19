@@ -49,7 +49,7 @@ public class StatClient {
             log.info("Отправка события в сервис статистики: {}", hit);
 
             webClient.post()
-                    .uri("/hit") // путь из StatsController
+                    .uri("/hit")
                     .bodyValue(hit)
                     .retrieve()
                     .toBodilessEntity()

@@ -2,10 +2,13 @@ package ru.practicum.event.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 
@@ -20,6 +23,21 @@ import java.util.List;
 public class StatClient {
 
     private final WebClient webClient;
+
+    public StatClient(WebClient.Builder webClientBuilder, @Value("${client.url}") String gatewayUrl) {
+        this.webClient = webClientBuilder.baseUrl(gatewayUrl)
+                .filter((request, next) -> next.exchange(request)
+                        .flatMap(response -> {
+                            if (response.statusCode().isError()) {
+                                return response.bodyToMono(String.class)
+                                        .flatMap(body -> {
+                                            return Mono.error(new ResponseStatusException(response.statusCode(), body));
+                                        });
+                            }
+                            return Mono.just(response);
+                        }))
+                .build();
+    }
 
     /**
      * Отправка события с конкретным ID

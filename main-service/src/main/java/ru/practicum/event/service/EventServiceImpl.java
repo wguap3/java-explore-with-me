@@ -1,5 +1,6 @@
 package ru.practicum.event.service;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ import ru.practicum.exception.NotFoundException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -77,11 +78,19 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventShortDtoOut> getPublicEvent(String text, Long[] categories, Boolean paid, String rangeStart, String rangeEnd, Boolean onlyAvailable, String sort, Integer from, Integer size) {
+    public List<EventShortDtoOut> getPublicEvent(String text, Long[] categories, Boolean paid, String rangeStart, String rangeEnd, Boolean onlyAvailable, String sort, Integer from, Integer size, HttpServletRequest request) {
         log.info("getPublicEvent called with parameters: text='{}', categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
 
-        statsClient.sendHit();
+        try {
+            statsClient.sendHit(
+                    "main-service",
+                    "/events/",
+                    request.getRemoteAddr()
+            );
+        } catch (Exception ex) {
+            log.error("Ошибка отправки статистики для запроса с text={} и categories={}", text, categories, ex);
+        }
         String lowText = text.toLowerCase().replace("\"", "");
 
         List<Event> events;
@@ -153,11 +162,10 @@ public class EventServiceImpl implements EventService {
 
 
     @Override
-    public EventDtoOut getPublicEventById(Long eventId) {
+    public EventDtoOut getPublicEventById(Long eventId, HttpServletRequest request) {
         Event event = eventRepository.getPublicEventById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
         if (event.getState().equals(EveState.PUBLISHED)) {
-            statsClient.sendHitId(eventId);
             try {
                 Thread.sleep(1000); // Задержка 1 секунда для синхронизации
             } catch (InterruptedException e) {
@@ -166,10 +174,25 @@ public class EventServiceImpl implements EventService {
             }
         }
         EventDtoOut eventDtoOut = eventMapper.mapEventToEventDtoOut(event);
-        String start = eventDtoOut.getCreatedOn();
-        String end = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        String[] uris = {"/events/" + event.getId()};
-        eventDtoOut.setViews(statsClient.getHits(start, end, uris, true).getFirst().getHits());
+        try {
+            statsClient.sendHit(
+                    "main-service",
+                    "/events/" + eventId,
+                    request.getRemoteAddr()
+            );
+        } catch (Exception ex) {
+            log.error("Ошибка отправки статистики для события id={}", eventId, ex);
+        }
+        try {
+            String start = eventDtoOut.getCreatedOn(); // дата создания события
+            String end = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            List<String> uris = Collections.singletonList("/events/" + eventId);
+            List<ViewStatsDto> stats = statsClient.getStats(start, end, uris, true);
+            eventDtoOut.setViews(stats.isEmpty() ? 0 : stats.get(0).getHits());
+        } catch (Exception ex) {
+            log.error("Ошибка получения просмотров для события id={}", eventId, ex);
+            eventDtoOut.setViews(0);
+        }
         return eventDtoOut;
     }
 

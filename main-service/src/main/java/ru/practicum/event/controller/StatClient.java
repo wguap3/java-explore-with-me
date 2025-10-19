@@ -1,70 +1,98 @@
 package ru.practicum.event.controller;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.util.UriBuilder;
-import reactor.core.publisher.Mono;
+import org.springframework.web.util.UriComponentsBuilder;
 import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
-@Service
 @Slf4j
+@Service
+@RequiredArgsConstructor
 public class StatClient {
 
     private final WebClient webClient;
 
-    public StatClient(WebClient.Builder webClientBuilder, @Value("${client.url}") String gatewayUrl) {
-        this.webClient = webClientBuilder.baseUrl(gatewayUrl)
-                .filter((request, next) -> next.exchange(request)
-                        .flatMap(response -> {
-                            if (response.statusCode().isError()) {
-                                return response.bodyToMono(String.class)
-                                        .flatMap(body -> {
-                                            return Mono.error(new ResponseStatusException(response.statusCode(), body));
-                                        });
-                            }
-                            return Mono.just(response);
-                        }))
-                .build();
+    /**
+     * Отправка события с конкретным ID
+     */
+    public void sendHitId(Long id, String app, String uri, String ip) {
+        sendHitInternal(id, app, uri, ip);
     }
 
-    public void sendHitId(Long id) {
-        log.info("Отправка данных о событии с ID {} в гейтвей статистики", id);
-        webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/events/{id}").build(id))
-                .exchangeToMono(response -> response.toEntity(Void.class))
-                .block();
+    /**
+     * Отправка события без ID
+     */
+    public void sendHit(String app, String uri, String ip) {
+        sendHitInternal(null, app, uri, ip);
     }
 
-    public void sendHit() {
-        log.info("Отправка данных о событии в гейтвей статистики");
-        webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/events").build())
-                .exchangeToMono(response -> response.toEntity(Void.class))
-                .block();
+    /**
+     * Общий метод отправки события в StatsController
+     */
+    private void sendHitInternal(Long id, String app, String uri, String ip) {
+        try {
+            EndpointHitDto hit = new EndpointHitDto();
+            hit.setId(id);
+            hit.setApp(app);
+            hit.setUri(uri);
+            hit.setIp(ip);
+            hit.setTimestamp(LocalDateTime.now());
+
+            log.info("Отправка события в сервис статистики: {}", hit);
+
+            webClient.post()
+                    .uri("/hit") // путь из StatsController
+                    .bodyValue(hit)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+
+        } catch (Exception ex) {
+            log.error("Ошибка отправки статистики для события id={}", id, ex);
+        }
     }
 
-    public List<ViewStatsDto> getHits(String start, String end, String[] uris, Boolean unique) {
-        log.info("Запрос данных о событии из гейтвея статистики {}, {} , {} ,{}", start, end, uris, unique);
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder.path("/events/stats")
-                        .queryParam("start", start)
-                        .queryParam("end", end)
-                        .queryParam("uris", uris)
-                        .queryParam("unique", unique)
-                        .build())
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<ViewStatsDto>>() {
-                })
-                .block();
+    /**
+     * Получение статистики просмотров
+     */
+    public List<ViewStatsDto> getStats(String start, String end, List<String> uris, boolean unique) {
+        try {
+            UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/stats")
+                    .queryParam("start", start)
+                    .queryParam("end", end)
+                    .queryParam("unique", unique);
+
+            if (uris != null) {
+                for (String u : uris) {
+                    builder.queryParam("uris", u);
+                }
+            }
+
+            String uri = builder.build().toUriString();
+
+            log.info("Запрос статистики по URI: {}", uri);
+
+            return webClient.get()
+                    .uri(uri)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<ViewStatsDto>>() {
+                    })
+                    .block();
+
+        } catch (Exception ex) {
+            log.error("Ошибка получения статистики", ex);
+            return Collections.emptyList();
+        }
     }
 }
+
 
 

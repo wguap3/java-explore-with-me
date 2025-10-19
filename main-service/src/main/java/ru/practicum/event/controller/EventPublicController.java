@@ -30,13 +30,13 @@ public class EventPublicController {
                                                  @RequestParam(name = "size", defaultValue = "10") Integer size, HttpServletRequest request) {
         log.info("GET/ Проверка параметров запроса метода getPublicEvent, text - {}, categories - {}, paid - {}, rangeStart - {}" +
                 ", rangeEnd - {}, onlyAvailable - {}, sort - {}, from - {}, size - {}", text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
-        return eventService.getPublicEvent(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
+        return eventService.getPublicEvent(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size, request);
     }
 
     @GetMapping("/{id}")
     public EventDtoOut getPublicEventById(@PathVariable(name = "id") Long eventId, HttpServletRequest request) {
         log.info("GET/ Проверка параметров запроса метода getPublicEventById, id - {}", eventId);
-        return eventService.getPublicEventById(eventId);
+        return eventService.getPublicEventById(eventId, request);
     }
 
 }

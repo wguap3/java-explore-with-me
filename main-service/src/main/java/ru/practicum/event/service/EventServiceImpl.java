@@ -175,7 +175,8 @@ public class EventServiceImpl implements EventService {
         }
         EventDtoOut eventDtoOut = eventMapper.mapEventToEventDtoOut(event);
         try {
-            statsClient.sendHit(
+            statsClient.sendHitId(
+                    eventId,
                     "main-service",
                     "/events/" + eventId,
                     request.getRemoteAddr()

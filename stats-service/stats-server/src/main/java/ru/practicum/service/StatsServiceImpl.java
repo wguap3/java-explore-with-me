@@ -10,6 +10,7 @@ import ru.practicum.model.EndpointHitEntity;
 import ru.practicum.repository.StatsRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -29,6 +30,9 @@ public class StatsServiceImpl implements StatsService {
                                        LocalDateTime end,
                                        List<String> uris,
                                        boolean unique) {
+        if (uris == null) {
+            uris = Collections.emptyList();
+        }
         if (end.isBefore(start)) {
             throw new BadRequest("Дата начала позже, чем дата конца!");
         }

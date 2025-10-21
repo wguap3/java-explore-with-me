@@ -85,7 +85,7 @@ public class EventServiceImpl implements EventService {
         try {
             statsClient.sendHit(
                     "main-service",
-                    "/events/",
+                    "/events",
                     request.getRemoteAddr()
             );
         } catch (Exception ex) {
@@ -178,7 +178,7 @@ public class EventServiceImpl implements EventService {
             statsClient.sendHitId(
                     eventId,
                     "main-service",
-                    "/events/" + eventId,
+                    "/events" + eventId,
                     request.getRemoteAddr()
             );
         } catch (Exception ex) {

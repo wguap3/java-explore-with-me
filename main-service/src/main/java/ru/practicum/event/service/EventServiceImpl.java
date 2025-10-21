@@ -49,7 +49,6 @@ public class EventServiceImpl implements EventService {
     @Override
     public List<EventShortDtoOut> getEvents(Long userId, Integer from, Integer size) {
         return eventRepository.getEvents(userId, from, size).stream().map(eventMapper::mapEventToEventShortDtoOut).toList();
-        // .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed()).toList();
     }
 
     @Override
@@ -185,7 +184,7 @@ public class EventServiceImpl implements EventService {
             log.error("Ошибка отправки статистики для события id={}", eventId, ex);
         }
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             LocalDateTime startTime = LocalDateTime.parse(eventDtoOut.getCreatedOn(), formatter);
             LocalDateTime endTime = LocalDateTime.now();
             List<String> uris = Collections.singletonList("/events/" + eventId);

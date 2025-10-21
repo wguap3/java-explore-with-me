@@ -3,6 +3,7 @@ package ru.practicum.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -30,9 +31,11 @@ public class StatsController {
     @Transactional(readOnly = true)
     public List<ViewStatsDto> getStats(
             @RequestParam("start")
+            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             LocalDateTime start,
 
             @RequestParam("end")
+            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             LocalDateTime end,
 
             @RequestParam(value = "uris", required = false) List<String> uris,

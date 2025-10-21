@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
@@ -26,6 +27,7 @@ public class StatsController {
     }
 
     @GetMapping("/stats")
+    @Transactional(readOnly = true)
     public List<ViewStatsDto> getStats(
             @RequestParam("start")
             LocalDateTime start,

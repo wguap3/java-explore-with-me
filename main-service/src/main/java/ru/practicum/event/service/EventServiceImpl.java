@@ -178,7 +178,7 @@ public class EventServiceImpl implements EventService {
             statsClient.sendHitId(
                     eventId,
                     "main-service",
-                    "/events" + eventId,
+                    "/events/" + eventId,
                     request.getRemoteAddr()
             );
         } catch (Exception ex) {

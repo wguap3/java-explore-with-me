@@ -3,6 +3,7 @@ package ru.practicum.categories.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
 @Table(name = "categories", uniqueConstraints = @UniqueConstraint(columnNames = "name"))
 public class Category {
     @Id

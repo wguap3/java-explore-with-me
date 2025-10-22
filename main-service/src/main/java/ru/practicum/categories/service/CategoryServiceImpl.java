@@ -2,9 +2,6 @@ package ru.practicum.categories.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.categories.dto.CategoryDtoIn;
@@ -29,9 +26,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryDtoOut> getCategories(Integer from, Integer size) {
-        Pageable pageable = PageRequest.of(from, size);
-        return categoryRepository.findAll(pageable).stream().map(categoryMapper::mapCategoryToCategoryDtoOut).toList();
-        //return categoryRepository.getCategories(from, size).stream().map(categoryMapper::mapCategoryToCategoryDtoOut).toList();
+        return categoryRepository.findAll().stream().map(categoryMapper::mapCategoryToCategoryDtoOut).toList();
     }
 
     @Override
@@ -49,13 +44,12 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Transactional
     @Override
-    public ResponseEntity<Void> deleteCategory(Long catId) {
+    public void deleteCategory(Long catId) {
         getCategory(catId);
         if (!eventRepository.findAllByCategory(catId).isEmpty()) {
             throw new ConflictException(("C категорий не должно быть связано ни одного события!"));
         }
         categoryRepository.deleteById(catId);
-        return ResponseEntity.noContent().build();
     }
 
     @Transactional

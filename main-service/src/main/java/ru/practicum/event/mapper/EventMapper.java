@@ -7,13 +7,15 @@ import ru.practicum.enums.EveState;
 import ru.practicum.event.dto.EventDtoIn;
 import ru.practicum.event.dto.EventDtoOut;
 import ru.practicum.event.dto.EventShortDtoOut;
+import ru.practicum.event.dto.EventUpdateDtoIn;
 import ru.practicum.event.model.Event;
 import ru.practicum.location.Location;
 import ru.practicum.participation.repository.ParticipationRepository;
 import ru.practicum.user.service.UserService;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+
+import static ru.practicum.constants.DateTimeFormatConstants.FORMATTER;
 
 @Component
 @RequiredArgsConstructor
@@ -21,14 +23,13 @@ public class EventMapper {
     private final CategoryService categoryService;
     private final UserService userService;
     private final ParticipationRepository participationRepository;
-    DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public Event mapEventDtoInToEvent(EventDtoIn eventDtoIn) {
         Event event = new Event();
         event.setAnnotation(eventDtoIn.getAnnotation());
         event.setCategory(eventDtoIn.getCategory());
         event.setDescription(eventDtoIn.getDescription());
-        event.setEventDate(LocalDateTime.parse(eventDtoIn.getEventDate(), format));
+        event.setEventDate(LocalDateTime.parse(eventDtoIn.getEventDate(), FORMATTER));
         event.setLocationLat(eventDtoIn.getLocation().getLat());
         event.setLocationLon(eventDtoIn.getLocation().getLon());
         if (eventDtoIn.getPaid() == null) {
@@ -57,9 +58,9 @@ public class EventMapper {
         eventDtoOut.setAnnotation(event.getAnnotation());
         eventDtoOut.setCategory(categoryService.getCategory(event.getCategory()));
         eventDtoOut.setConfirmedRequests(participationRepository.countByEventIdAndConfirmed(event.getId()));
-        eventDtoOut.setCreatedOn(event.getCreatedOn().format(format));
+        eventDtoOut.setCreatedOn(event.getCreatedOn().format(FORMATTER));
         eventDtoOut.setDescription(event.getDescription());
-        eventDtoOut.setEventDate(event.getEventDate().format(format));
+        eventDtoOut.setEventDate(event.getEventDate().format(FORMATTER));
         eventDtoOut.setId(event.getId());
         eventDtoOut.setInitiator(userService.getUser(event.getInitiator()));
         Location location = new Location();
@@ -69,7 +70,7 @@ public class EventMapper {
         eventDtoOut.setPaid(event.getPaid());
         eventDtoOut.setParticipantLimit(event.getParticipantLimit());
         if (event.getPublishedOn() != null) {
-            eventDtoOut.setPublishedOn(event.getPublishedOn().format(format));
+            eventDtoOut.setPublishedOn(event.getPublishedOn().format(FORMATTER));
         }
         eventDtoOut.setRequestModeration(event.getRequestModeration());
         eventDtoOut.setState(event.getState().toString());
@@ -77,17 +78,49 @@ public class EventMapper {
         return eventDtoOut;
     }
 
-    public EventShortDtoOut mapEventToEventShortDtoOut(Event event) {
+    public EventShortDtoOut mapEventToEventShortDtoOut(Event event, Long views) {
         EventShortDtoOut eventShortDtoOut = new EventShortDtoOut();
         eventShortDtoOut.setAnnotation(event.getAnnotation());
         eventShortDtoOut.setCategory(categoryService.getCategory(event.getCategory()));
         eventShortDtoOut.setConfirmedRequests(participationRepository.countByEventIdAndConfirmed(event.getId()));
-        eventShortDtoOut.setEventDate(event.getEventDate().format(format));
+        eventShortDtoOut.setEventDate(event.getEventDate().format(FORMATTER));
         eventShortDtoOut.setId(event.getId());
         eventShortDtoOut.setInitiator(userService.getUser(event.getInitiator()));
         eventShortDtoOut.setPaid(event.getPaid());
         eventShortDtoOut.setTitle(event.getTitle());
+        eventShortDtoOut.setViews(views != null ? views : 0L);
         return eventShortDtoOut;
+    }
+
+    public void updateEventFromDto(Event event, EventUpdateDtoIn dto) {
+        if (dto.getAnnotation() != null) {
+            event.setAnnotation(dto.getAnnotation());
+        }
+        if (dto.getCategory() != null) {
+            event.setCategory(dto.getCategory());
+        }
+        if (dto.getDescription() != null) {
+            event.setDescription(dto.getDescription());
+        }
+        if (dto.getEventDate() != null) {
+            event.setEventDate(LocalDateTime.parse(dto.getEventDate(), FORMATTER));
+        }
+        if (dto.getLocation() != null) {
+            event.setLocationLat(dto.getLocation().getLat());
+            event.setLocationLon(dto.getLocation().getLon());
+        }
+        if (dto.getPaid() != null) {
+            event.setPaid(dto.getPaid());
+        }
+        if (dto.getParticipantLimit() != null) {
+            event.setParticipantLimit(dto.getParticipantLimit());
+        }
+        if (dto.getRequestModeration() != null) {
+            event.setRequestModeration(dto.getRequestModeration());
+        }
+        if (dto.getTitle() != null) {
+            event.setTitle(dto.getTitle());
+        }
     }
 
 }

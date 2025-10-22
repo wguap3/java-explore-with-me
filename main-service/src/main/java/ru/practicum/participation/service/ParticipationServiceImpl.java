@@ -21,6 +21,7 @@ import ru.practicum.user.service.UserService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -29,6 +30,7 @@ public class ParticipationServiceImpl implements ParticipationService {
     private final ParticipationRepository participationRepository;
     private final EventRepository eventRepository;
     private final UserService userService;
+    private final ParticipationValidationService participationValidationService;
     private final ParticipationMapper participationMapper;
 
     @Override
@@ -42,41 +44,47 @@ public class ParticipationServiceImpl implements ParticipationService {
 
     @Transactional
     @Override
-    public ParticipationUpdateDtoOut updateEventRequests(Long userId, Long eventId, ParticipationUpdateDtoIn participationUpdateDtoIn) {
-        Event event = eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
-        Long number = participationRepository.countByEvent(eventId);
-        if (event.getParticipantLimit() != 0 && event.getParticipantLimit() <= number) {
-            throw new ConflictException("Достигнут лимит по заявкам на данное событие! - updateEventRequests");
-        }
-        if (participationUpdateDtoIn == null) {
-            throw new ConflictException("Тело пустое!Нарушение спецификации!"); //ошибка тестов
-        }
-        if (participationRepository.countBadReq(participationUpdateDtoIn.getRequestIds()) > 0) {
-            throw new ConflictException("Статус можно изменить только у заявок, находящихся в состоянии ожидания!");
-        }
-        ParticipationUpdateDtoOut participationUpdateDtoOut = new ParticipationUpdateDtoOut();
-        List<Participation> list = new ArrayList<>();
-        if (participationUpdateDtoIn.getStatus().equals(UpdateState.REJECTED)) { //если отмена
-            list = participationRepository.participationReq(participationUpdateDtoIn.getRequestIds());
-            List<Participation> rejectList = list;
-            List<Participation> statusList = list;
-            statusList.forEach(part -> part.setStatus(PartState.REJECTED));
-            statusList.forEach(participationRepository::save);
-            participationUpdateDtoOut.setConfirmedRequests(new ArrayList<>());
-            participationUpdateDtoOut.setRejectedRequests(rejectList.stream().map(participationMapper::mapParticipationToParticipationDtoOut).toList());
-        } else if (participationUpdateDtoIn.getStatus().equals(UpdateState.CONFIRMED)) {
-            Long freePlaces = event.getParticipantLimit() - number; //количесво свободных мест
-            if (freePlaces >= participationUpdateDtoIn.getRequestIds().size()) { //свободных мест достаточно
-                savePart(eventId, 0, participationUpdateDtoIn.getRequestIds().size(), list, PartState.CONFIRMED, participationUpdateDtoIn, participationUpdateDtoOut);
+    public ParticipationUpdateDtoOut updateEventRequests(Long userId, Long eventId, ParticipationUpdateDtoIn dto) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+
+        participationValidationService.validateParticipationUpdate(event, dto);
+
+        ParticipationUpdateDtoOut out = new ParticipationUpdateDtoOut();
+
+        Long freePlaces = event.getParticipantLimit() - participationRepository.countByEvent(eventId);
+
+        if (dto.getStatus() == UpdateState.REJECTED) {
+            updateStatus(dto.getRequestIds(), PartState.REJECTED, out);
+        } else if (dto.getStatus() == UpdateState.CONFIRMED) {
+            int size = dto.getRequestIds().size();
+            if (freePlaces >= size) {
+                updateStatus(dto.getRequestIds(), PartState.CONFIRMED, out);
             } else {
-                int numberToApprove = (int) (participationUpdateDtoIn.getRequestIds().size() - freePlaces);
-                savePart(eventId, 0, numberToApprove, list, PartState.CONFIRMED, participationUpdateDtoIn, participationUpdateDtoOut);
-                List<Participation> rejectList = new ArrayList<>(List.of());
-                savePart(eventId, numberToApprove, participationUpdateDtoIn.getRequestIds().size(), rejectList, PartState.REJECTED, participationUpdateDtoIn, participationUpdateDtoOut);
+                updateStatus(dto.getRequestIds().subList(0, freePlaces.intValue()), PartState.CONFIRMED, out);
+                updateStatus(dto.getRequestIds().subList(freePlaces.intValue(), size), PartState.REJECTED, out);
             }
         }
-        return participationUpdateDtoOut;
+
+        return out;
     }
+
+    private void updateStatus(List<Long> requestIds, PartState status, ParticipationUpdateDtoOut out) {
+        List<Participation> participations = requestIds.stream()
+                .map(id -> participationRepository.findById(id)
+                        .orElseThrow(() -> new NotFoundException("Participation with id=" + id + " was not found")))
+                .toList();
+
+        participations.forEach(p -> p.setStatus(status));
+        participationRepository.saveAll(participations);
+
+        if (status == PartState.CONFIRMED) {
+            out.getConfirmedRequests().addAll(participationMapper.mapToDtoList(participations));
+        } else if (status == PartState.REJECTED) {
+            out.getRejectedRequests().addAll(participationMapper.mapToDtoList(participations));
+        }
+    }
+
 
     @Override
     public List<ParticipationDtoOut> getParticipationForAnotherUser(Long userId) {
@@ -123,16 +131,38 @@ public class ParticipationServiceImpl implements ParticipationService {
         return participationMapper.mapParticipationToParticipationDtoOut(participationRepository.save(participation));
     }
 
-    public void savePart(Long eventId, Integer start, Integer size, List<Participation> list, PartState status, ParticipationUpdateDtoIn participationUpdateDtoIn, ParticipationUpdateDtoOut participationUpdateDtoOut) {
-        for (int i = start; i < size; i++) {
-            Participation participation = participationRepository.findById(participationUpdateDtoIn.getRequestIds().get(i))
-                    .orElseThrow(() -> new NotFoundException("Participation with id=" + eventId + " was not found"));
-            list.add(participation);
+    private void savePart(Long eventId, Integer start, Integer size, List<Participation> list,
+                          PartState status, ParticipationUpdateDtoIn participationUpdateDtoIn,
+                          ParticipationUpdateDtoOut participationUpdateDtoOut) {
+
+        List<Participation> toUpdate = participationUpdateDtoIn.getRequestIds().subList(start, size)
+                .stream()
+                .map(id -> participationRepository.findById(id)
+                        .orElseThrow(() -> new NotFoundException("Participation with id=" + id + " was not found")))
+                .collect(Collectors.toList());
+        toUpdate.forEach(part -> part.setStatus(status));
+
+        participationRepository.saveAll(toUpdate);
+
+
+        if (status == PartState.CONFIRMED) {
+            List<ParticipationDtoOut> confirmed = toUpdate.stream()
+                    .map(participationMapper::mapParticipationToParticipationDtoOut)
+                    .toList();
+            if (participationUpdateDtoOut.getConfirmedRequests() == null) {
+                participationUpdateDtoOut.setConfirmedRequests(new ArrayList<>());
+            }
+            participationUpdateDtoOut.getConfirmedRequests().addAll(confirmed);
+
+        } else if (status == PartState.REJECTED) {
+            List<ParticipationDtoOut> rejected = toUpdate.stream()
+                    .map(participationMapper::mapParticipationToParticipationDtoOut)
+                    .toList();
+            if (participationUpdateDtoOut.getRejectedRequests() == null) {
+                participationUpdateDtoOut.setRejectedRequests(new ArrayList<>());
+            }
+            participationUpdateDtoOut.getRejectedRequests().addAll(rejected);
         }
-        list.forEach(participation -> participation.setStatus(status));
-        list.forEach(participationRepository::save);
-        participationUpdateDtoOut.setConfirmedRequests(list.stream().map(participationMapper::mapParticipationToParticipationDtoOut).toList());
-        participationUpdateDtoOut.setRejectedRequests(new ArrayList<>());
     }
 
 }

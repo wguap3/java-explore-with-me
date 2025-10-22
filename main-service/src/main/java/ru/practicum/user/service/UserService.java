@@ -1,6 +1,5 @@
 package ru.practicum.user.service;
 
-import org.springframework.http.ResponseEntity;
 import ru.practicum.user.dto.UserDtoIn;
 import ru.practicum.user.dto.UserDtoOut;
 import ru.practicum.user.dto.UserShortDtoOut;
@@ -12,7 +11,7 @@ public interface UserService {
 
     UserDtoOut addUser(UserDtoIn userDtoIn);
 
-    ResponseEntity<Void> deleteUser(Long userId);
+    void deleteUser(Long userId);
 
     UserShortDtoOut getUser(Long userId);
 }

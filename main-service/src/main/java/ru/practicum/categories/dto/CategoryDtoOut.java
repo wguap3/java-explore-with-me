@@ -1,11 +1,14 @@
 package ru.practicum.categories.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+
+@Getter
+@Setter
 public class CategoryDtoOut {
-    Long id;
+    private Long id;
     @NotBlank
-    String name;
+    private String name;
 }

@@ -1,6 +1,5 @@
 package ru.practicum.compilations.service;
 
-import org.springframework.http.ResponseEntity;
 import ru.practicum.compilations.dto.CompilationsDtoIn;
 import ru.practicum.compilations.dto.CompilationsDtoOut;
 import ru.practicum.compilations.dto.CompilationsUpdateDtoIn;
@@ -10,7 +9,7 @@ import java.util.List;
 public interface CompilationsService {
     CompilationsDtoOut addCompilation(CompilationsDtoIn compilationsDtoIn);
 
-    ResponseEntity<Void> deleteCompilation(Long compId);
+    void deleteCompilation(Long compId);
 
     CompilationsDtoOut updateCompilation(Long compId, CompilationsUpdateDtoIn compilationsDtoIn);
 

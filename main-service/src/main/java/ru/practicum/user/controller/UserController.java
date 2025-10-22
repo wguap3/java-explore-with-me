@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.user.dto.UserDtoIn;
 import ru.practicum.user.dto.UserDtoOut;
@@ -36,8 +35,8 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable(name = "userId") Long userId) {
+    public void deleteUser(@PathVariable(name = "userId") Long userId) {
         log.info("DELETE/ Проверка параметров запроса метода deleteUser, userId - {}", userId);
-        return userService.deleteUser(userId);
+        userService.deleteUser(userId);
     }
 }

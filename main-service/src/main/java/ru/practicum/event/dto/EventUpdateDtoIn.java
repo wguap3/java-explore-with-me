@@ -4,14 +4,12 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 import org.hibernate.validator.constraints.Length;
 import ru.practicum.enums.StateAction;
 import ru.practicum.location.Location;
 
 @Getter
 @Setter
-@ToString
 public class EventUpdateDtoIn {
     @Length(min = 20, max = 2000)
     String annotation;

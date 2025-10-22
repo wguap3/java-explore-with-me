@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.ViewStatsDto;
 import ru.practicum.enums.EveState;
+import ru.practicum.enums.SortMode;
 import ru.practicum.enums.StateAction;
-import ru.practicum.event.controller.StatClient;
 import ru.practicum.event.dto.EventDtoIn;
 import ru.practicum.event.dto.EventDtoOut;
 import ru.practicum.event.dto.EventShortDtoOut;
@@ -20,22 +20,24 @@ import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.ForbiddenException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.participation.repository.ParticipationRepository;
+import ru.practicum.stats.StatsService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EventServiceImpl implements EventService {
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
-    private final StatClient statsClient;
+    private final StatsService statsService;
+    private final ParticipationRepository participationRepository;
 
     @Transactional
     @Override
@@ -48,8 +50,35 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDtoOut> getEvents(Long userId, Integer from, Integer size) {
-        return eventRepository.getEvents(userId, from, size).stream().map(eventMapper::mapEventToEventShortDtoOut).toList();
+        List<Event> events = eventRepository.getEvents(userId, from, size);
+
+        List<String> uris = events.stream()
+                .map(e -> "/events/" + e.getId())
+                .toList();
+
+        final Map<String, Long> viewsMap = new HashMap<>();
+        try {
+            List<ViewStatsDto> stats = statsService.getStats(
+                    LocalDateTime.now().minusYears(10),
+                    LocalDateTime.now(),
+                    uris,
+                    true
+            );
+            if (stats != null) {
+                stats.forEach(s -> viewsMap.put(s.getUri(), s.getHits()));
+            }
+        } catch (Exception ex) {
+            log.error("Ошибка получения просмотров для событий: {}", uris, ex);
+        }
+
+        return events.stream()
+                .map(event -> {
+                    Long views = viewsMap.getOrDefault("/events/" + event.getId(), 0L);
+                    return eventMapper.mapEventToEventShortDtoOut(event, views);
+                })
+                .toList();
     }
+
 
     @Override
     public EventDtoOut getFullEvent(Long userId, Long eventId) {
@@ -67,7 +96,7 @@ public class EventServiceImpl implements EventService {
         } else if (!event.getState().equals(EveState.PENDING) && !event.getState().equals(EveState.CANCELED)) {
             throw new ForbiddenException("Only pending or canceled events can be changed");
         }
-        changeEventFields(event, eventDtoIn);
+        eventMapper.updateEventFromDto(event, eventDtoIn);
         if (eventDtoIn.getStateAction() != null && eventDtoIn.getStateAction().equals(StateAction.CANCEL_REVIEW)) {
             event.setState(EveState.CANCELED);
         } else if (eventDtoIn.getStateAction() != null && eventDtoIn.getStateAction().equals(StateAction.SEND_TO_REVIEW)) {
@@ -77,27 +106,25 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventShortDtoOut> getPublicEvent(String text, Long[] categories, Boolean paid, String rangeStart, String rangeEnd, Boolean onlyAvailable, String sort, Integer from, Integer size, HttpServletRequest request) {
+    public List<EventShortDtoOut> getPublicEvent(String text, Long[] categories, Boolean paid,
+                                                 String rangeStart, String rangeEnd, Boolean onlyAvailable,
+                                                 String sort, Integer from, Integer size, HttpServletRequest request) {
+
         log.info("getPublicEvent called with parameters: text='{}', categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
 
-        try {
-            statsClient.sendHit(
-                    "main-service",
-                    "/events",
-                    request.getRemoteAddr()
-            );
-        } catch (Exception ex) {
-            log.error("Ошибка отправки статистики для запроса с text={} и categories={}", text, categories, ex);
-        }
-        String lowText = text.toLowerCase().replace("\"", "");
+        statsService.sendHit("main-service", "/events", request.getRemoteAddr());
+
+        String lowText = text != null ? text.toLowerCase().replace("\"", "") : "";
 
         List<Event> events;
         if (rangeStart != null && rangeEnd != null) {
-            if (parseDate(rangeStart).isAfter(parseDate(rangeEnd))) {
+            LocalDateTime start = parseDate(rangeStart);
+            LocalDateTime end = parseDate(rangeEnd);
+            if (start.isAfter(end)) {
                 throw new BadRequestException("Дата начала события позже даты конца события!");
             }
-            events = eventRepository.getPublicEventByTextAndStartAndEnd(lowText, parseDate(rangeStart), parseDate(rangeEnd));
+            events = eventRepository.getPublicEventByTextAndStartAndEnd(lowText, start, end);
         } else if (rangeStart != null) {
             events = eventRepository.getPublicEventByTextAndStart(lowText, parseDate(rangeStart));
         } else if (rangeEnd != null) {
@@ -106,57 +133,61 @@ public class EventServiceImpl implements EventService {
             events = eventRepository.getPublicEventByText(lowText);
         }
 
-        // Фильтр по оплате
-        List<Event> firstEvents;
         if (paid != null) {
-            firstEvents = events.stream().filter(event -> event.getPaid() != null && event.getPaid().equals(paid)).toList();
-
-        } else {
-            firstEvents = events;
+            events = events.stream()
+                    .filter(e -> e.getPaid() != null && e.getPaid().equals(paid))
+                    .toList();
         }
 
-        // Фильтр по доступности
-        List<Long> ids;
-        if (onlyAvailable != null && onlyAvailable) {
-            List<EventDtoOut> nextEvents = firstEvents.stream()
-                    .map(eventMapper::mapEventToEventDtoOut)
+        if (Boolean.TRUE.equals(onlyAvailable)) {
+            events = events.stream()
+                    .filter(e -> e.getParticipantLimit() == 0 || participationRepository.countByEventIdAndConfirmed(e.getId()) < e.getParticipantLimit())
                     .toList();
-            ids = nextEvents.stream()
-                    .filter(eventDtoOut -> eventDtoOut.getConfirmedRequests() != null
-                            && eventDtoOut.getParticipantLimit() != null
-                            && eventDtoOut.getConfirmedRequests() < eventDtoOut.getParticipantLimit())
-                    .map(EventDtoOut::getId)
-                    .toList();
-        } else {
-            ids = firstEvents.stream().map(Event::getId).toList();
         }
 
-        // Фильтр по категориям и сортировка
-        List<EventShortDtoOut> result;
         if (categories != null && categories.length > 0) {
-            if ("EVENT_DATE".equals(sort)) {
-                result = eventRepository.getEventsSortDateAndCategory(ids, categories, from, size).stream()
-                        .map(eventMapper::mapEventToEventShortDtoOut)
-                        .toList();
-            } else {
-                result = eventRepository.getEventsSortViewsAndCategory(ids, categories, from, size).stream()
-                        .map(eventMapper::mapEventToEventShortDtoOut)
-                        .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
-                        .toList();
-            }
-        } else {
-            if ("EVENT_DATE".equals(sort)) {
-                result = eventRepository.getEventsSortDate(ids, from, size).stream()
-                        .map(eventMapper::mapEventToEventShortDtoOut)
-                        .toList();
-            } else {
-                result = eventRepository.getEventsSortViews(ids, from, size).stream()
-                        .map(eventMapper::mapEventToEventShortDtoOut)
-                        .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
-                        .toList();
-            }
+            List<Long> categoryList = Arrays.asList(categories);
+            events = events.stream()
+                    .filter(e -> categoryList.contains(e.getCategory()))
+                    .toList();
         }
-        return result;
+
+        List<String> uris = events.stream().map(e -> "/events/" + e.getId()).toList();
+        final Map<String, Long> finalViewsMap = new HashMap<>();
+        try {
+            List<ViewStatsDto> stats = statsService.getStats(
+                    LocalDateTime.now().minusYears(10), LocalDateTime.now(), uris, true);
+            if (stats != null) {
+                finalViewsMap.putAll(stats.stream()
+                        .collect(Collectors.toMap(ViewStatsDto::getUri, ViewStatsDto::getHits)));
+            }
+        } catch (Exception ex) {
+            log.error("Ошибка получения просмотров для событий: {}", uris, ex);
+        }
+
+        List<EventShortDtoOut> result = events.stream()
+                .map(event -> eventMapper.mapEventToEventShortDtoOut(
+                        event,
+                        finalViewsMap.getOrDefault("/events/" + event.getId(), 0L)
+                ))
+                .toList();
+
+        SortMode sortMode = SortMode.fromString(sort);
+        if (sortMode == SortMode.VIEWS) {
+            result = result.stream()
+                    .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                    .toList();
+        } else { // EVENT_DATE
+            result = result.stream()
+                    .sorted(Comparator.comparing(EventShortDtoOut::getEventDate))
+                    .toList();
+        }
+
+        // 9️⃣ Пагинация
+        int startIndex = Math.min(from != null ? from : 0, result.size());
+        int endIndex = Math.min(startIndex + (size != null ? size : result.size()), result.size());
+
+        return result.subList(startIndex, endIndex);
     }
 
 
@@ -164,17 +195,9 @@ public class EventServiceImpl implements EventService {
     public EventDtoOut getPublicEventById(Long eventId, HttpServletRequest request) {
         Event event = eventRepository.getPublicEventById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
-        if (event.getState().equals(EveState.PUBLISHED)) {
-            try {
-                Thread.sleep(1000); // Задержка 1 секунда для синхронизации
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Ошибка задержки: " + e.getMessage(), e);
-            }
-        }
         EventDtoOut eventDtoOut = eventMapper.mapEventToEventDtoOut(event);
         try {
-            statsClient.sendHitId(
+            statsService.sendHitId(
                     eventId,
                     "main-service",
                     "/events/" + eventId,
@@ -189,7 +212,7 @@ public class EventServiceImpl implements EventService {
             LocalDateTime endTime = LocalDateTime.now();
             List<String> uris = Collections.singletonList("/events/" + eventId);
 
-            List<ViewStatsDto> stats = statsClient.getStats(startTime, endTime, uris, true);
+            List<ViewStatsDto> stats = statsService.getStats(startTime, endTime, uris, true);
 
             eventDtoOut.setViews(stats.isEmpty() ? 0 : stats.get(0).getHits());
         } catch (Exception ex) {
@@ -234,7 +257,7 @@ public class EventServiceImpl implements EventService {
             }
         }
 
-        if (states != null && stepThreeIds.isEmpty()) { //ничего не нашли
+        if (states != null && stepThreeIds.isEmpty()) {
             return new ArrayList<>();
         }
 
@@ -274,7 +297,7 @@ public class EventServiceImpl implements EventService {
         }
         LocalDateTime date = event.getEventDate();
         checkValidTime(date, 1, "Дата начала изменяемого события должна быть не ранее чем за час от даты публикации");
-        changeEventFields(event, eventDtoIn);
+        eventMapper.updateEventFromDto(event, eventDtoIn);
         if (eventDtoIn.getStateAction() != null && eventDtoIn.getStateAction().equals(StateAction.PUBLISH_EVENT)) {
             event.setState(EveState.PUBLISHED);
             event.setPublishedOn(LocalDateTime.now());
@@ -286,9 +309,33 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDtoOut> getCompilationsEvents(List<Long> eventIds) {
-        return eventRepository.getCompilationsEvents(eventIds).stream().map(eventMapper::mapEventToEventShortDtoOut)
-                .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed()).toList();
+        List<Event> events = eventRepository.getCompilationsEvents(eventIds);
+
+        List<String> uris = events.stream()
+                .map(e -> "/events/" + e.getId())
+                .toList();
+
+        final Map<String, Long> viewsMap = new HashMap<>();
+        try {
+            List<ViewStatsDto> stats = statsService.getStats(
+                    LocalDateTime.now().minusYears(10), LocalDateTime.now(), uris, true
+            );
+            if (stats != null) {
+                stats.forEach(s -> viewsMap.put(s.getUri(), s.getHits()));
+            }
+        } catch (Exception ex) {
+            log.error("Ошибка получения просмотров для событий: {}", uris, ex);
+        }
+
+        return events.stream()
+                .map(event -> {
+                    Long views = viewsMap.getOrDefault("/events/" + event.getId(), 0L);
+                    return eventMapper.mapEventToEventShortDtoOut(event, views);
+                })
+                .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .toList();
     }
+
 
     public void checkValidTime(LocalDateTime time, Integer hours, String string) {
         if (LocalDateTime.now().plusHours(hours).isAfter(time)) {
@@ -306,40 +353,8 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
     }
 
-    public LocalDateTime parseDate(String date) {
-        return LocalDateTime.parse(date.replace("\"", ""), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    private LocalDateTime parseDate(String date) {
+        return LocalDateTime.parse(date.replace("\"", ""), FORMATTER);
     }
 
-    public void changeEventFields(Event event, EventUpdateDtoIn eventDtoIn) {
-        if (eventDtoIn.getAnnotation() != null) {
-            event.setAnnotation(eventDtoIn.getAnnotation());
-        }
-        if (eventDtoIn.getCategory() != null) {
-            event.setCategory(eventDtoIn.getCategory());
-        }
-        if (eventDtoIn.getDescription() != null) {
-            event.setDescription(eventDtoIn.getDescription());
-        }
-        if (eventDtoIn.getEventDate() != null) {
-            checkValidTime(event.getEventDate(), 2, "Дата и время на которые намечено событие не может быть раньше, чем 2 часа от текущего момента");
-            checkValidTime(LocalDateTime.parse(eventDtoIn.getEventDate(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), 0, "Дата и время события не может быть в прошлом");
-            event.setEventDate(parseDate(eventDtoIn.getEventDate()));
-        }
-        if (eventDtoIn.getLocation() != null) {
-            event.setLocationLat(eventDtoIn.getLocation().getLat());
-            event.setLocationLon(eventDtoIn.getLocation().getLon());
-        }
-        if (eventDtoIn.getPaid() != null) {
-            event.setPaid(eventDtoIn.getPaid());
-        }
-        if (eventDtoIn.getParticipantLimit() != null) {
-            event.setParticipantLimit(eventDtoIn.getParticipantLimit());
-        }
-        if (eventDtoIn.getRequestModeration() != null) {
-            event.setRequestModeration(eventDtoIn.getRequestModeration());
-        }
-        if (eventDtoIn.getTitle() != null) {
-            event.setTitle(eventDtoIn.getTitle());
-        }
-    }
 }

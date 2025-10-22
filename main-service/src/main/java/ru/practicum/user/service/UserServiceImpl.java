@@ -2,7 +2,6 @@ package ru.practicum.user.service;
 
 import lombok.RequiredArgsConstructor;
 import org.mapstruct.factory.Mappers;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.exception.ConflictException;
@@ -43,10 +42,10 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public ResponseEntity<Void> deleteUser(Long userId) {
+    public void deleteUser(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User with id=" + userId + " was not found"));
         userRepository.delete(user);
-        return ResponseEntity.noContent().build();
+
     }
 
     @Override

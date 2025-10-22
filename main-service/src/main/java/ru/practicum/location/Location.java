@@ -1,11 +1,13 @@
 package ru.practicum.location;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import org.springframework.stereotype.Component;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
-@Component
+@Getter
+@Setter
+@NoArgsConstructor
 public class Location {
     @NotNull
     Float lat;

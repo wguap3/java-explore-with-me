@@ -1,4 +1,4 @@
-package ru.practicum.event.controller;
+package ru.practicum.stats;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

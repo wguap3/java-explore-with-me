@@ -2,11 +2,13 @@ package ru.practicum.compilations.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 public class CompilationsDtoIn {
     List<Long> events;
     Boolean pinned;

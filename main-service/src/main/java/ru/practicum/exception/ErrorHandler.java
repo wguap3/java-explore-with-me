@@ -15,52 +15,60 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 @RestControllerAdvice
 public class ErrorHandler {
-    @ExceptionHandler
+
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    @ExceptionHandler({
+            BadRequestException.class,
+            MethodArgumentTypeMismatchException.class,
+            MethodArgumentNotValidException.class,
+            DataIntegrityViolationException.class
+    })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse badRequest(final BadRequestException e) {
-        log.error("Ошибка 400 {}", e.getMessage(), e);
-        return new ErrorResponse("BAD_REQUEST", "Incorrectly made request.", e.getMessage(), LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+    public ErrorResponse handleBadRequest(Exception e) {
+        log.error("Ошибка 400: {}", e.getMessage(), e);
+        return new ErrorResponse(
+                "BAD_REQUEST",
+                "Incorrectly made request.",
+                e.getMessage(),
+                LocalDateTime.now().format(FORMATTER)
+        );
     }
 
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse incorrectRequestTypeMismatch(MethodArgumentTypeMismatchException e) {
-        log.error("Ошибка 400 {}", e.getMessage());
-        return new ErrorResponse("BAD_REQUEST", "Incorrectly made request.", e.getMessage(), LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse incorrectRequestNotValid(MethodArgumentNotValidException e) {
-        log.error("Ошибка 400 {}", e.getMessage());
-        return new ErrorResponse("BAD_REQUEST", "Incorrectly made request.", e.getMessage(), LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-    }
-
-    @ExceptionHandler
+    @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse notFoundRequest(NotFoundException e) {
-        log.error("Ошибка 404 {}", e.getMessage());
-        return new ErrorResponse("NOT_FOUND", "The required object was not found.", e.getMessage(), LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+    public ErrorResponse handleNotFound(NotFoundException e) {
+        log.error("Ошибка 404: {}", e.getMessage(), e);
+        return new ErrorResponse(
+                "NOT_FOUND",
+                "The required object was not found.",
+                e.getMessage(),
+                LocalDateTime.now().format(FORMATTER)
+        );
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(ForbiddenException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ErrorResponse dateError(ForbiddenException e) {
-        log.error("Ошибка 409 {}", e.getMessage());
-        return new ErrorResponse("FORBIDDEN", "For the requested operation the conditions are not met.", e.getMessage(), LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+    public ErrorResponse handleForbidden(ForbiddenException e) {
+        log.error("Ошибка 403: {}", e.getMessage(), e);
+        return new ErrorResponse(
+                "FORBIDDEN",
+                "For the requested operation the conditions are not met.",
+                e.getMessage(),
+                LocalDateTime.now().format(FORMATTER)
+        );
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(ConflictException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse incorrectRequestConflict(ConflictException e) {
-        log.error("Ошибка 409 {}", e.getMessage());
-        return new ErrorResponse("CONFLICT", "Integrity constraint has been violated.", e.getMessage(), LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-    }
-
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse sqlException(DataIntegrityViolationException e) {
-        log.error("Ошибка 400 {}", e.getMessage());
-        return new ErrorResponse("BAD_REQUEST", "Incorrectly made request.", e.getMessage(), LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+    public ErrorResponse handleConflict(ConflictException e) {
+        log.error("Ошибка 409: {}", e.getMessage(), e);
+        return new ErrorResponse(
+                "CONFLICT",
+                "Integrity constraint has been violated.",
+                e.getMessage(),
+                LocalDateTime.now().format(FORMATTER)
+        );
     }
 }
+

@@ -1,4 +1,4 @@
-package ru.practicum.event.controller;
+package ru.practicum.stats;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,14 +12,14 @@ import ru.practicum.dto.EndpointHitDto;
 import ru.practicum.dto.ViewStatsDto;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+
+import static ru.practicum.constants.DateTimeFormatConstants.FORMATTER;
 
 @Slf4j
 @Service
 public class StatClient {
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final WebClient webClient;
 
     @Autowired

@@ -2,13 +2,15 @@ package ru.practicum.participation.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.practicum.enums.PartState;
 
 import java.time.LocalDateTime;
 
-@Setter
 @Getter
+@Setter
+@NoArgsConstructor
 @Table(name = "participation")
 @Entity
 public class Participation {

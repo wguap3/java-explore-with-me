@@ -1,10 +1,12 @@
 package ru.practicum.categories.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class CategoryDtoIn {
     @NotBlank
-    String name;
+    private String name;
 }

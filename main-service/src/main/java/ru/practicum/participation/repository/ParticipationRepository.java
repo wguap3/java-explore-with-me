@@ -15,7 +15,7 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
 
     Long countByEvent(Long eventId);
 
-    @Query("select count(p) from Participation as p where (p.status = 'PUBLISHED' or p.status = 'CANCELED') and p.id IN ?1")
+    @Query("select count(p) from Participation as p where (p.status = 'PUBLISH_EVENT' or p.status = 'CANCELED') and p.id IN ?1")
     Long countBadReq(List<Long> requestIds);
 
     @Query("select p from Participation as p where p.id IN ?1")

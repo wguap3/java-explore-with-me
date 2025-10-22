@@ -1,11 +1,14 @@
 package ru.practicum.user.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class UserShortDtoOut {
-    @NotBlank
+    @NotNull
     Long id;
     @NotBlank
     String name;

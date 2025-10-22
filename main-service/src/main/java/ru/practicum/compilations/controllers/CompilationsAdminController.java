@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.compilations.dto.CompilationsDtoIn;
 import ru.practicum.compilations.dto.CompilationsDtoOut;
@@ -22,14 +21,14 @@ public class CompilationsAdminController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CompilationsDtoOut addCompilation(@Valid @RequestBody CompilationsDtoIn compilationsDtoIn) {
-        log.info("PATCH/ Проверка параметров запроса метода addCompilation, compilationsDtoIn - {}", compilationsDtoIn);
+        log.info("POST/ Проверка параметров запроса метода addCompilation, compilationsDtoIn - {}", compilationsDtoIn);
         return compilationsService.addCompilation(compilationsDtoIn);
     }
 
     @DeleteMapping("/{compId}")
-    public ResponseEntity<Void> deleteCompilation(@PathVariable(name = "compId") Long compId) {
+    public void deleteCompilation(@PathVariable(name = "compId") Long compId) {
         log.info("DELETE/ Проверка параметров запроса метода deleteCompilation, compId - {}", compId);
-        return compilationsService.deleteCompilation(compId);
+        compilationsService.deleteCompilation(compId);
     }
 
     @PatchMapping("/{compId}")

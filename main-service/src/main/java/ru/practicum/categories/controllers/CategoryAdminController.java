@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.categories.dto.CategoryDtoIn;
 import ru.practicum.categories.dto.CategoryDtoOut;
@@ -26,9 +25,9 @@ public class CategoryAdminController {
     }
 
     @DeleteMapping("/{catId}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable(name = "catId") Long catId) {
+    public void deleteCategory(@PathVariable(name = "catId") Long catId) {
         log.info("DELETE/ Проверка параметров запроса метода deleteCategory, catId - {}", catId);
-        return categoryService.deleteCategory(catId);
+        categoryService.deleteCategory(catId);
     }
 
     @PatchMapping("/{catId}")

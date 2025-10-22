@@ -1,6 +1,5 @@
 package ru.practicum.categories.service;
 
-import org.springframework.http.ResponseEntity;
 import ru.practicum.categories.dto.CategoryDtoIn;
 import ru.practicum.categories.dto.CategoryDtoOut;
 
@@ -13,7 +12,7 @@ public interface CategoryService {
 
     CategoryDtoOut addCategory(CategoryDtoIn categoryDtoIn);
 
-    ResponseEntity<Void> deleteCategory(Long catId);
+    void deleteCategory(Long catId);
 
     CategoryDtoOut updateCategory(Long catId, CategoryDtoIn categoryDtoIn);
 }

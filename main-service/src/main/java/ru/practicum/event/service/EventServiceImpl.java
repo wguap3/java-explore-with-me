@@ -177,13 +177,12 @@ public class EventServiceImpl implements EventService {
             result = result.stream()
                     .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                     .toList();
-        } else { // EVENT_DATE
+        } else {
             result = result.stream()
                     .sorted(Comparator.comparing(EventShortDtoOut::getEventDate))
                     .toList();
         }
 
-        // 9️⃣ Пагинация
         int startIndex = Math.min(from != null ? from : 0, result.size());
         int endIndex = Math.min(startIndex + (size != null ? size : result.size()), result.size());
 

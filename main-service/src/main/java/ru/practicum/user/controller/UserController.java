@@ -35,6 +35,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable(name = "userId") Long userId) {
         log.info("DELETE/ Проверка параметров запроса метода deleteUser, userId - {}", userId);
         userService.deleteUser(userId);

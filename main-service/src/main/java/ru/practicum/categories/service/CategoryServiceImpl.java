@@ -26,7 +26,10 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryDtoOut> getCategories(Integer from, Integer size) {
-        return categoryRepository.findAll().stream().map(categoryMapper::mapCategoryToCategoryDtoOut).toList();
+        return categoryRepository.findAll().stream()
+                .skip(from)
+                .limit(size)
+                .map(categoryMapper::mapCategoryToCategoryDtoOut).toList();
     }
 
     @Override

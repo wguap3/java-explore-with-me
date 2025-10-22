@@ -52,22 +52,30 @@ public class ParticipationServiceImpl implements ParticipationService {
 
         ParticipationUpdateDtoOut out = new ParticipationUpdateDtoOut();
 
-        Long freePlaces = event.getParticipantLimit() - participationRepository.countByEvent(eventId);
+        long freePlacesLong = event.getParticipantLimit() - participationRepository.countByEvent(eventId);
+        int freePlaces = (int) Math.max(0, freePlacesLong);
+
+        List<Long> requestIds = dto.getRequestIds() != null ? dto.getRequestIds() : List.of();
 
         if (dto.getStatus() == UpdateState.REJECTED) {
-            updateStatus(dto.getRequestIds(), PartState.REJECTED, out);
+            if (!requestIds.isEmpty()) {
+                updateStatus(requestIds, PartState.REJECTED, out);
+            }
         } else if (dto.getStatus() == UpdateState.CONFIRMED) {
-            int size = dto.getRequestIds().size();
-            if (freePlaces >= size) {
-                updateStatus(dto.getRequestIds(), PartState.CONFIRMED, out);
-            } else {
-                updateStatus(dto.getRequestIds().subList(0, freePlaces.intValue()), PartState.CONFIRMED, out);
-                updateStatus(dto.getRequestIds().subList(freePlaces.intValue(), size), PartState.REJECTED, out);
+            int total = requestIds.size();
+            int toConfirm = Math.min(freePlaces, total);
+
+            if (toConfirm > 0) {
+                updateStatus(requestIds.subList(0, toConfirm), PartState.CONFIRMED, out);
+            }
+            if (toConfirm < total) {
+                updateStatus(requestIds.subList(toConfirm, total), PartState.REJECTED, out);
             }
         }
 
         return out;
     }
+
 
     private void updateStatus(List<Long> requestIds, PartState status, ParticipationUpdateDtoOut out) {
         List<Participation> participations = requestIds.stream()

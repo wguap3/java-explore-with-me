@@ -18,42 +18,52 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query("select e from Event as e where e.id = ?1 AND e.state = 'PUBLISHED'")
     Optional<Event> getPublicEventById(Long eventId);
 
-    @Query(value = "SELECT * FROM events AS e WHERE (LOWER(CONCAT('%', e.annotation, '%')) LIKE CONCAT('%', :lowText, '%') OR LOWER(CONCAT('%', e.description, '%')) LIKE CONCAT('%', :lowText, '%')) " +
-            "AND e.event_date > :rangeStart AND e.event_date < :rangeEnd AND e.state = 'PUBLISHED'", nativeQuery = true)
-    List<Event> getPublicEventByTextAndStartAndEnd(@Param("lowText") String lowText, @Param("rangeStart") LocalDateTime rangeStart, @Param("rangeEnd") LocalDateTime rangeEnd);
+    @Query(value = "SELECT * FROM events AS e " +
+            "WHERE (e.annotation ILIKE CONCAT('%', :lowText, '%') " +
+            "OR e.description ILIKE CONCAT('%', :lowText, '%')) " +
+            "AND e.event_date > :rangeStart " +
+            "AND e.event_date < :rangeEnd " +
+            "AND e.state = 'PUBLISHED'",
+            nativeQuery = true)
+    List<Event> getPublicEventByTextAndStartAndEnd(@Param("lowText") String lowText,
+                                                   @Param("rangeStart") LocalDateTime rangeStart,
+                                                   @Param("rangeEnd") LocalDateTime rangeEnd);
 
-    @Query(value = "SELECT * FROM events AS e WHERE (LOWER(CONCAT('%', e.annotation, '%')) LIKE CONCAT('%', :lowText, '%') OR LOWER(CONCAT('%', e.description, '%')) LIKE CONCAT('%', :lowText, '%')) " +
-            "AND e.event_date > :rangeStart AND e.state = 'PUBLISHED'", nativeQuery = true)
-    List<Event> getPublicEventByTextAndStart(@Param("lowText") String lowText, @Param("rangeStart") LocalDateTime rangeStart);
 
-    @Query(value = "SELECT * FROM events AS e WHERE (LOWER(CONCAT('%', e.annotation, '%')) LIKE CONCAT('%', :lowText, '%') OR LOWER(CONCAT('%', e.description, '%')) LIKE CONCAT('%', :lowText, '%')) " +
-            "AND e.event_date < :rangeEnd AND e.state = 'PUBLISHED'", nativeQuery = true)
-    List<Event> getPublicEventByTextAndEnd(@Param("lowText") String lowText, @Param("rangeEnd") LocalDateTime rangeEnd);
+    @Query(value = "SELECT * FROM events AS e " +
+            "WHERE (e.annotation ILIKE CONCAT('%', :lowText, '%') " +
+            "OR e.description ILIKE CONCAT('%', :lowText, '%')) " +
+            "AND e.event_date > :rangeStart " +
+            "AND e.state = 'PUBLISHED'",
+            nativeQuery = true)
+    List<Event> getPublicEventByTextAndStart(@Param("lowText") String lowText,
+                                             @Param("rangeStart") LocalDateTime rangeStart);
+
+    @Query(value = "SELECT * FROM events AS e " +
+            "WHERE (e.annotation ILIKE CONCAT('%', :lowText, '%') " +
+            "OR e.description ILIKE CONCAT('%', :lowText, '%')) " +
+            "AND e.event_date < :rangeEnd AND e.state = 'PUBLISHED'",
+            nativeQuery = true)
+    List<Event> getPublicEventByTextAndEnd(@Param("lowText") String lowText,
+                                           @Param("rangeEnd") LocalDateTime rangeEnd);
 
 
-    @Query("SELECT e FROM Event e WHERE (LOWER(CONCAT('%', e.annotation, '%')) LIKE LOWER(CONCAT('%', ?1, '%')) " +
-            "OR LOWER(CONCAT('%', e.description, '%')) LIKE LOWER(CONCAT('%', ?1, '%'))) " +
+    @Query("SELECT e FROM Event e " +
+            "WHERE (e.annotation ILIKE CONCAT('%', ?1, '%') " +
+            "OR e.description ILIKE CONCAT('%', ?1, '%')) " +
             "AND e.state = 'PUBLISHED'")
     List<Event> getPublicEventByText(String lowText);
-
-    @Query(value = "SELECT * FROM events AS e WHERE e.id IN :ids AND e.category IN :category ORDER BY e.event_date ASC OFFSET :from LIMIT :size", nativeQuery = true)
-    List<Event> getEventsSortDateAndCategory(@Param("ids") List<Long> ids, @Param("category") Long[] category, @Param("from") Integer from, @Param("size") Integer size);
-
-    @Query(value = "SELECT * FROM events AS e WHERE e.id IN :ids AND e.category IN :category ORDER BY e.id OFFSET :from LIMIT :size", nativeQuery = true)
-    List<Event> getEventsSortViewsAndCategory(@Param("ids") List<Long> ids, @Param("category") Long[] category, @Param("from") Integer from, @Param("size") Integer size);
-
-    @Query(value = "SELECT * FROM events AS e WHERE e.id IN :ids ORDER BY e.event_date ASC OFFSET :from LIMIT :size", nativeQuery = true)
-    List<Event> getEventsSortDate(@Param("ids") List<Long> ids, @Param("from") Integer from, @Param("size") Integer size);
-
-    @Query(value = "SELECT * FROM events AS e WHERE e.id IN :ids ORDER BY e.id OFFSET :from LIMIT :size", nativeQuery = true)
-    List<Event> getEventsSortViews(@Param("ids") List<Long> ids, @Param("from") Integer from, @Param("size") Integer size);
-
 
     @Query(value = "SELECT * FROM events AS e WHERE e.event_date > :rangeStart AND e.event_date < :rangeEnd ORDER BY e.id OFFSET :from LIMIT :size", nativeQuery = true)
     List<Event> getAdminEventByStartAndEnd(@Param("rangeStart") LocalDateTime rangeStart, @Param("rangeEnd") LocalDateTime rangeEnd, @Param("from") Integer from, @Param("size") Integer size);
 
-    @Query(value = "SELECT * FROM events AS e WHERE e.event_date > :rangeStart ORDER BY e.id OFFSET :from LIMIT :size", nativeQuery = true)
-    List<Event> getAdminEventByStart(@Param("rangeStart") LocalDateTime rangeStart, @Param("from") Integer from, @Param("size") Integer size);
+    @Query(value = "SELECT * FROM events AS e " +
+            "WHERE e.event_date < :rangeEnd " +
+            "ORDER BY e.id " +
+            "OFFSET :from LIMIT :size", nativeQuery = true)
+    List<Event> getAdminEventByStart(@Param("rangeEnd") LocalDateTime rangeEnd,
+                                     @Param("from") Integer from,
+                                     @Param("size") Integer size);
 
     @Query(value = "SELECT * FROM events AS e WHERE e.event_date < :rangeEnd OFFSET :from LIMIT :size", nativeQuery = true)
     List<Event> getAdminEventByEnd(@Param("rangeEnd") LocalDateTime rangeEnd, @Param("from") Integer from, @Param("size") Integer size);

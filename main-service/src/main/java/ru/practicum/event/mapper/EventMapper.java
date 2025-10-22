@@ -1,15 +1,14 @@
 package ru.practicum.event.mapper;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+
+import org.mapstruct.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import ru.practicum.categories.service.CategoryService;
-import ru.practicum.enums.EveState;
 import ru.practicum.event.dto.EventDtoIn;
 import ru.practicum.event.dto.EventDtoOut;
 import ru.practicum.event.dto.EventShortDtoOut;
 import ru.practicum.event.dto.EventUpdateDtoIn;
 import ru.practicum.event.model.Event;
-import ru.practicum.location.Location;
 import ru.practicum.participation.repository.ParticipationRepository;
 import ru.practicum.user.service.UserService;
 
@@ -17,110 +16,79 @@ import java.time.LocalDateTime;
 
 import static ru.practicum.constants.DateTimeFormatConstants.FORMATTER;
 
-@Component
-@RequiredArgsConstructor
-public class EventMapper {
-    private final CategoryService categoryService;
-    private final UserService userService;
-    private final ParticipationRepository participationRepository;
 
-    public Event mapEventDtoInToEvent(EventDtoIn eventDtoIn) {
-        Event event = new Event();
-        event.setAnnotation(eventDtoIn.getAnnotation());
-        event.setCategory(eventDtoIn.getCategory());
-        event.setDescription(eventDtoIn.getDescription());
-        event.setEventDate(LocalDateTime.parse(eventDtoIn.getEventDate(), FORMATTER));
-        event.setLocationLat(eventDtoIn.getLocation().getLat());
-        event.setLocationLon(eventDtoIn.getLocation().getLon());
-        if (eventDtoIn.getPaid() == null) {
-            event.setPaid(false);
-        } else {
-            event.setPaid(eventDtoIn.getPaid());
-        }
-        if (eventDtoIn.getParticipantLimit() == null) {
-            event.setParticipantLimit(0);
-        } else {
-            event.setParticipantLimit(eventDtoIn.getParticipantLimit());
-        }
+@Mapper(componentModel = "spring")
+public abstract class EventMapper {
 
-        if (eventDtoIn.getRequestModeration() != null && !eventDtoIn.getRequestModeration()) {
-            event.setRequestModeration(false);
-        } else {
-            event.setRequestModeration(true);
-        }
-        event.setState(EveState.PENDING);
-        event.setTitle(eventDtoIn.getTitle());
-        return event;
+
+    @Autowired
+    protected CategoryService categoryService;
+
+    @Autowired
+    protected UserService userService;
+
+    @Autowired
+    protected ParticipationRepository participationRepository;
+
+    @Named("stringToLocalDateTime")
+    protected LocalDateTime stringToLocalDateTime(String date) {
+        return date != null ? LocalDateTime.parse(date, FORMATTER) : null;
     }
 
-    public EventDtoOut mapEventToEventDtoOut(Event event) {
-        EventDtoOut eventDtoOut = new EventDtoOut();
-        eventDtoOut.setAnnotation(event.getAnnotation());
-        eventDtoOut.setCategory(categoryService.getCategory(event.getCategory()));
-        eventDtoOut.setConfirmedRequests(participationRepository.countByEventIdAndConfirmed(event.getId()));
-        eventDtoOut.setCreatedOn(event.getCreatedOn().format(FORMATTER));
-        eventDtoOut.setDescription(event.getDescription());
-        eventDtoOut.setEventDate(event.getEventDate().format(FORMATTER));
-        eventDtoOut.setId(event.getId());
-        eventDtoOut.setInitiator(userService.getUser(event.getInitiator()));
-        Location location = new Location();
-        location.setLat(event.getLocationLat());
-        location.setLon(event.getLocationLon());
-        eventDtoOut.setLocation(location);
-        eventDtoOut.setPaid(event.getPaid());
-        eventDtoOut.setParticipantLimit(event.getParticipantLimit());
-        if (event.getPublishedOn() != null) {
-            eventDtoOut.setPublishedOn(event.getPublishedOn().format(FORMATTER));
-        }
-        eventDtoOut.setRequestModeration(event.getRequestModeration());
-        eventDtoOut.setState(event.getState().toString());
-        eventDtoOut.setTitle(event.getTitle());
-        return eventDtoOut;
+    @Named("localDateTimeToString")
+    protected String localDateTimeToString(LocalDateTime dateTime) {
+        return dateTime != null ? dateTime.format(FORMATTER) : null;
     }
 
-    public EventShortDtoOut mapEventToEventShortDtoOut(Event event, Long views) {
-        EventShortDtoOut eventShortDtoOut = new EventShortDtoOut();
-        eventShortDtoOut.setAnnotation(event.getAnnotation());
-        eventShortDtoOut.setCategory(categoryService.getCategory(event.getCategory()));
-        eventShortDtoOut.setConfirmedRequests(participationRepository.countByEventIdAndConfirmed(event.getId()));
-        eventShortDtoOut.setEventDate(event.getEventDate().format(FORMATTER));
-        eventShortDtoOut.setId(event.getId());
-        eventShortDtoOut.setInitiator(userService.getUser(event.getInitiator()));
-        eventShortDtoOut.setPaid(event.getPaid());
-        eventShortDtoOut.setTitle(event.getTitle());
-        eventShortDtoOut.setViews(views != null ? views : 0L);
-        return eventShortDtoOut;
-    }
+    @Mapping(target = "category", source = "eventDtoIn.category")
+    @Mapping(target = "annotation", source = "eventDtoIn.annotation")
+    @Mapping(target = "description", source = "eventDtoIn.description")
+    @Mapping(target = "eventDate", source = "eventDtoIn.eventDate", qualifiedByName = "stringToLocalDateTime")
+    @Mapping(target = "locationLat", source = "eventDtoIn.location.lat")
+    @Mapping(target = "locationLon", source = "eventDtoIn.location.lon")
+    @Mapping(target = "paid", expression = "java(eventDtoIn.getPaid() == null ? false : eventDtoIn.getPaid())")
+    @Mapping(target = "participantLimit", expression = "java(eventDtoIn.getParticipantLimit() == null ? 0 : eventDtoIn.getParticipantLimit())")
+    @Mapping(target = "requestModeration", expression = "java(eventDtoIn.getRequestModeration() == null || eventDtoIn.getRequestModeration())")
+    @Mapping(target = "state", expression = "java(ru.practicum.enums.EveState.PENDING)")
+    @Mapping(target = "title", source = "eventDtoIn.title")
+    public abstract Event mapEventDtoInToEvent(EventDtoIn eventDtoIn);
 
-    public void updateEventFromDto(Event event, EventUpdateDtoIn dto) {
-        if (dto.getAnnotation() != null) {
-            event.setAnnotation(dto.getAnnotation());
-        }
-        if (dto.getCategory() != null) {
-            event.setCategory(dto.getCategory());
-        }
-        if (dto.getDescription() != null) {
-            event.setDescription(dto.getDescription());
-        }
-        if (dto.getEventDate() != null) {
-            event.setEventDate(LocalDateTime.parse(dto.getEventDate(), FORMATTER));
-        }
-        if (dto.getLocation() != null) {
-            event.setLocationLat(dto.getLocation().getLat());
-            event.setLocationLon(dto.getLocation().getLon());
-        }
-        if (dto.getPaid() != null) {
-            event.setPaid(dto.getPaid());
-        }
-        if (dto.getParticipantLimit() != null) {
-            event.setParticipantLimit(dto.getParticipantLimit());
-        }
-        if (dto.getRequestModeration() != null) {
-            event.setRequestModeration(dto.getRequestModeration());
-        }
-        if (dto.getTitle() != null) {
-            event.setTitle(dto.getTitle());
-        }
-    }
+    @Mapping(target = "annotation", source = "event.annotation")
+    @Mapping(target = "category", expression = "java(categoryService.getCategory(event.getCategory()))")
+    @Mapping(target = "confirmedRequests", expression = "java(participationRepository.countByEventIdAndConfirmed(event.getId()))")
+    @Mapping(target = "createdOn", source = "event.createdOn", qualifiedByName = "localDateTimeToString")
+    @Mapping(target = "description", source = "event.description")
+    @Mapping(target = "eventDate", source = "event.eventDate", qualifiedByName = "localDateTimeToString")
+    @Mapping(target = "id", source = "event.id")
+    @Mapping(target = "initiator", expression = "java(userService.getUser(event.getInitiator()))")
+    @Mapping(target = "location", expression = "java(new Location(event.getLocationLat(), event.getLocationLon()))")
+    @Mapping(target = "paid", source = "event.paid")
+    @Mapping(target = "participantLimit", source = "event.participantLimit")
+    @Mapping(target = "publishedOn", source = "event.publishedOn", qualifiedByName = "localDateTimeToString")
+    @Mapping(target = "requestModeration", source = "event.requestModeration")
+    @Mapping(target = "state", expression = "java(event.getState().toString())")
+    @Mapping(target = "title", source = "event.title")
+    public abstract EventDtoOut mapEventToEventDtoOut(Event event);
 
+    @Mapping(target = "annotation", source = "event.annotation")
+    @Mapping(target = "category", expression = "java(categoryService.getCategory(event.getCategory()))")
+    @Mapping(target = "confirmedRequests", expression = "java(participationRepository.countByEventIdAndConfirmed(event.getId()))")
+    @Mapping(target = "eventDate", source = "event.eventDate", qualifiedByName = "localDateTimeToString")
+    @Mapping(target = "id", source = "event.id")
+    @Mapping(target = "initiator", expression = "java(userService.getUser(event.getInitiator()))")
+    @Mapping(target = "paid", source = "event.paid")
+    @Mapping(target = "title", source = "event.title")
+    @Mapping(target = "views", expression = "java(views != null ? views : 0L)")
+    public abstract EventShortDtoOut mapEventToEventShortDtoOut(Event event, Long views);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(
+            target = "eventDate",
+            expression = "java(dto.getEventDate() != null ? java.time.LocalDateTime.parse(dto.getEventDate(), ru.practicum.constants.DateTimeFormatConstants.FORMATTER) : event.getEventDate())"
+    )
+    @Mapping(target = "locationLat", expression = "java(dto.getLocation() != null ? dto.getLocation().getLat() : event.getLocationLat())")
+    @Mapping(target = "locationLon", expression = "java(dto.getLocation() != null ? dto.getLocation().getLon() : event.getLocationLon())")
+    public abstract void updateEventFromDto(@MappingTarget Event event, EventUpdateDtoIn dto);
 }
+
+

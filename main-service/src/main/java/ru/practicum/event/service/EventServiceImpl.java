@@ -96,6 +96,12 @@ public class EventServiceImpl implements EventService {
         } else if (!event.getState().equals(EveState.PENDING) && !event.getState().equals(EveState.CANCELED)) {
             throw new ForbiddenException("Only pending or canceled events can be changed");
         }
+        if (eventDtoIn.getEventDate() != null) {
+            LocalDateTime newEventDate = LocalDateTime.parse(eventDtoIn.getEventDate(), FORMATTER);
+            if (newEventDate.isBefore(LocalDateTime.now().plusHours(2))) {
+                throw new BadRequestException("Дата начала изменяемого события должна быть не ранее чем через 2 часа от текущего момента");
+            }
+        }
         eventMapper.updateEventFromDto(event, eventDtoIn);
         if (eventDtoIn.getStateAction() != null && eventDtoIn.getStateAction().equals(StateAction.CANCEL_REVIEW)) {
             event.setState(EveState.CANCELED);
@@ -294,8 +300,11 @@ public class EventServiceImpl implements EventService {
         if (event.getState().equals(EveState.PUBLISHED) || event.getState().equals(EveState.CANCELED)) {
             throw new ConflictException("Event must not be published or canceled");
         }
-        LocalDateTime date = event.getEventDate();
-        checkValidTime(date, 1, "Дата начала изменяемого события должна быть не ранее чем за час от даты публикации");
+        if (eventDtoIn.getEventDate() != null) {
+            LocalDateTime newDate = LocalDateTime.parse(eventDtoIn.getEventDate(), FORMATTER);
+            checkValidTime(newDate, 1,
+                    "Дата начала изменяемого события должна быть не ранее чем за час от текущего момента");
+        }
         eventMapper.updateEventFromDto(event, eventDtoIn);
         if (eventDtoIn.getStateAction() != null && eventDtoIn.getStateAction().equals(StateAction.PUBLISH_EVENT)) {
             event.setState(EveState.PUBLISHED);

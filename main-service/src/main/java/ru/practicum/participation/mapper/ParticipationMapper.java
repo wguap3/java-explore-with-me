@@ -1,36 +1,28 @@
 package ru.practicum.participation.mapper;
 
 
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 import ru.practicum.participation.dto.ParticipationDtoOut;
 import ru.practicum.participation.model.Participation;
 
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-@Component
-public class ParticipationMapper {
 
-    private static final DateTimeFormatter FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+@Mapper(componentModel = "spring")
+public interface ParticipationMapper {
 
-    public ParticipationDtoOut mapParticipationToParticipationDtoOut(Participation participation) {
-        ParticipationDtoOut participationDtoOut = new ParticipationDtoOut();
-        participationDtoOut.setCreated(
-                participation.getCreated().truncatedTo(ChronoUnit.SECONDS).format(FORMATTER)
-        );
-        participationDtoOut.setEvent(participation.getEvent());
-        participationDtoOut.setId(participation.getId());
-        participationDtoOut.setRequester(participation.getRequester());
-        participationDtoOut.setStatus(participation.getStatus().toString());
-        return participationDtoOut;
-    }
+    ParticipationMapper INSTANCE = Mappers.getMapper(ParticipationMapper.class);
 
-    public List<ParticipationDtoOut> mapToDtoList(List<Participation> participations) {
-        return participations.stream()
-                .map(this::mapParticipationToParticipationDtoOut)
-                .toList();
-    }
+    @Mapping(target = "created",
+            expression = "java(participation.getCreated().truncatedTo(java.time.temporal.ChronoUnit.SECONDS).format(ru.practicum.constants.DateTimeFormatConstants.FORMATTER))")
+    @Mapping(target = "event", source = "event")
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "requester", source = "requester")
+    @Mapping(target = "status",
+            expression = "java(participation.getStatus().toString())")
+    ParticipationDtoOut mapParticipationToParticipationDtoOut(Participation participation);
+
+    List<ParticipationDtoOut> mapToDtoList(List<Participation> participations);
 }
-

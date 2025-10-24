@@ -12,12 +12,12 @@ import java.util.List;
 @Getter
 @Setter
 public class CompilationsDtoOut {
-    List<EventShortDtoOut> events;
+    private List<EventShortDtoOut> events;
     @NotNull
-    Long id;
+    private Long id;
     @NotNull
-    Boolean pinned;
+    private Boolean pinned;
     @NotBlank
     @Size(max = 50)
-    String title;
+    private String title;
 }

@@ -2,65 +2,52 @@ package ru.practicum.event.mapper;
 
 
 import org.mapstruct.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import ru.practicum.categories.service.CategoryService;
+import ru.practicum.categories.dto.CategoryDtoOut;
 import ru.practicum.event.dto.EventDtoIn;
 import ru.practicum.event.dto.EventDtoOut;
 import ru.practicum.event.dto.EventShortDtoOut;
 import ru.practicum.event.dto.EventUpdateDtoIn;
 import ru.practicum.event.model.Event;
-import ru.practicum.participation.repository.ParticipationRepository;
-import ru.practicum.user.service.UserService;
+import ru.practicum.user.dto.UserShortDtoOut;
 
 import java.time.LocalDateTime;
 
 import static ru.practicum.constants.DateTimeFormatConstants.FORMATTER;
 
-
 @Mapper(componentModel = "spring")
-public abstract class EventMapper {
-
-
-    @Autowired
-    protected CategoryService categoryService;
-
-    @Autowired
-    protected UserService userService;
-
-    @Autowired
-    protected ParticipationRepository participationRepository;
+public interface EventMapper {
 
     @Named("stringToLocalDateTime")
-    protected LocalDateTime stringToLocalDateTime(String date) {
+    default LocalDateTime stringToLocalDateTime(String date) {
         return date != null ? LocalDateTime.parse(date, FORMATTER) : null;
     }
 
     @Named("localDateTimeToString")
-    protected String localDateTimeToString(LocalDateTime dateTime) {
+    default String localDateTimeToString(LocalDateTime dateTime) {
         return dateTime != null ? dateTime.format(FORMATTER) : null;
     }
 
-    @Mapping(target = "category", source = "eventDtoIn.category")
-    @Mapping(target = "annotation", source = "eventDtoIn.annotation")
-    @Mapping(target = "description", source = "eventDtoIn.description")
-    @Mapping(target = "eventDate", source = "eventDtoIn.eventDate", qualifiedByName = "stringToLocalDateTime")
-    @Mapping(target = "locationLat", source = "eventDtoIn.location.lat")
-    @Mapping(target = "locationLon", source = "eventDtoIn.location.lon")
-    @Mapping(target = "paid", expression = "java(eventDtoIn.getPaid() == null ? false : eventDtoIn.getPaid())")
-    @Mapping(target = "participantLimit", expression = "java(eventDtoIn.getParticipantLimit() == null ? 0 : eventDtoIn.getParticipantLimit())")
+    @Mapping(target = "category", source = "category")
+    @Mapping(target = "annotation", source = "annotation")
+    @Mapping(target = "description", source = "description")
+    @Mapping(target = "eventDate", source = "eventDate", qualifiedByName = "stringToLocalDateTime")
+    @Mapping(target = "locationLat", source = "location.lat")
+    @Mapping(target = "locationLon", source = "location.lon")
+    @Mapping(target = "paid", expression = "java(eventDtoIn.getPaid() != null ? eventDtoIn.getPaid() : false)")
+    @Mapping(target = "participantLimit", expression = "java(eventDtoIn.getParticipantLimit() != null ? eventDtoIn.getParticipantLimit() : 0)")
     @Mapping(target = "requestModeration", expression = "java(eventDtoIn.getRequestModeration() == null || eventDtoIn.getRequestModeration())")
     @Mapping(target = "state", expression = "java(ru.practicum.enums.EveState.PENDING)")
-    @Mapping(target = "title", source = "eventDtoIn.title")
-    public abstract Event mapEventDtoInToEvent(EventDtoIn eventDtoIn);
+    @Mapping(target = "title", source = "title")
+    Event mapEventDtoInToEvent(EventDtoIn eventDtoIn);
 
     @Mapping(target = "annotation", source = "event.annotation")
-    @Mapping(target = "category", expression = "java(categoryService.getCategory(event.getCategory()))")
-    @Mapping(target = "confirmedRequests", expression = "java(participationRepository.countByEventIdAndConfirmed(event.getId()))")
+    @Mapping(target = "category", source = "category")
+    @Mapping(target = "confirmedRequests", source = "confirmedRequests")
     @Mapping(target = "createdOn", source = "event.createdOn", qualifiedByName = "localDateTimeToString")
     @Mapping(target = "description", source = "event.description")
     @Mapping(target = "eventDate", source = "event.eventDate", qualifiedByName = "localDateTimeToString")
     @Mapping(target = "id", source = "event.id")
-    @Mapping(target = "initiator", expression = "java(userService.getUser(event.getInitiator()))")
+    @Mapping(target = "initiator", source = "initiator")
     @Mapping(target = "location", expression = "java(new Location(event.getLocationLat(), event.getLocationLon()))")
     @Mapping(target = "paid", source = "event.paid")
     @Mapping(target = "participantLimit", source = "event.participantLimit")
@@ -68,18 +55,29 @@ public abstract class EventMapper {
     @Mapping(target = "requestModeration", source = "event.requestModeration")
     @Mapping(target = "state", expression = "java(event.getState().toString())")
     @Mapping(target = "title", source = "event.title")
-    public abstract EventDtoOut mapEventToEventDtoOut(Event event);
+    EventDtoOut mapEventToEventDtoOut(
+            Event event,
+            CategoryDtoOut category,
+            UserShortDtoOut initiator,
+            Long confirmedRequests
+    );
 
     @Mapping(target = "annotation", source = "event.annotation")
-    @Mapping(target = "category", expression = "java(categoryService.getCategory(event.getCategory()))")
-    @Mapping(target = "confirmedRequests", expression = "java(participationRepository.countByEventIdAndConfirmed(event.getId()))")
+    @Mapping(target = "category", source = "category")
+    @Mapping(target = "confirmedRequests", source = "confirmedRequests")
     @Mapping(target = "eventDate", source = "event.eventDate", qualifiedByName = "localDateTimeToString")
     @Mapping(target = "id", source = "event.id")
-    @Mapping(target = "initiator", expression = "java(userService.getUser(event.getInitiator()))")
+    @Mapping(target = "initiator", source = "initiator")
     @Mapping(target = "paid", source = "event.paid")
     @Mapping(target = "title", source = "event.title")
-    @Mapping(target = "views", expression = "java(views != null ? views : 0L)")
-    public abstract EventShortDtoOut mapEventToEventShortDtoOut(Event event, Long views);
+    @Mapping(target = "views", source = "views")
+    EventShortDtoOut mapEventToEventShortDtoOut(
+            Event event,
+            CategoryDtoOut category,
+            UserShortDtoOut initiator,
+            Long confirmedRequests,
+            Long views
+    );
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(
@@ -88,7 +86,7 @@ public abstract class EventMapper {
     )
     @Mapping(target = "locationLat", expression = "java(dto.getLocation() != null ? dto.getLocation().getLat() : event.getLocationLat())")
     @Mapping(target = "locationLon", expression = "java(dto.getLocation() != null ? dto.getLocation().getLon() : event.getLocationLon())")
-    public abstract void updateEventFromDto(@MappingTarget Event event, EventUpdateDtoIn dto);
+    void updateEventFromDto(@MappingTarget Event event, EventUpdateDtoIn dto);
 }
 
 

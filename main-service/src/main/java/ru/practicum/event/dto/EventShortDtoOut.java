@@ -11,16 +11,16 @@ import ru.practicum.user.dto.UserShortDtoOut;
 @Getter
 @Setter
 public class EventShortDtoOut {
-    String annotation;
-    CategoryDtoOut category;
-    Long confirmedRequests;
+    private String annotation;
+    private CategoryDtoOut category;
+    private Long confirmedRequests;
     @NotBlank
-    String eventDate;
-    Long id;
-    UserShortDtoOut initiator;
+    private String eventDate;
+    private Long id;
+    private UserShortDtoOut initiator;
     @NotNull
-    Boolean paid;
-    String title;
-    Long views;
+    private Boolean paid;
+    private String title;
+    private Long views;
 
 }

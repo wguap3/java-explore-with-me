@@ -15,4 +15,5 @@ public interface CompilationsRepository extends JpaRepository<Compilations, Long
     @Query(value = "SELECT * FROM compilations AS c ORDER BY c.id OFFSET :from LIMIT :size", nativeQuery = true)
     List<Compilations> getPublicComp(@Param("from") Integer from, @Param("size") Integer size);
 
+
 }

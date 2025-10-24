@@ -10,9 +10,9 @@ import java.util.List;
 @Getter
 @Setter
 public class CompilationsDtoIn {
-    List<Long> events;
-    Boolean pinned;
+    private List<Long> events;
+    private Boolean pinned;
     @NotBlank
     @Size(max = 50)
-    String title;
+    private String title;
 }

@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Location {
     @NotNull
-    Float lat;
+    private Float lat;
     @NotNull
-    Float lon;
+    private Float lon;
 }

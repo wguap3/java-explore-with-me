@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
     @NotBlank
-    String name;
+    private String name;
 }

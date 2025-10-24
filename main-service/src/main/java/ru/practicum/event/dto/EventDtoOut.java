@@ -12,26 +12,26 @@ import ru.practicum.user.dto.UserShortDtoOut;
 @Setter
 public class EventDtoOut {
     @NotBlank
-    String annotation;
+    private String annotation;
     @NotNull
-    CategoryDtoOut category;
-    Long confirmedRequests;
-    String createdOn;
-    String description;
+    private CategoryDtoOut category;
+    private Long confirmedRequests;
+    private String createdOn;
+    private String description;
     @NotBlank
-    String eventDate;
-    Long id;
+    private String eventDate;
+    private Long id;
     @NotNull
-    UserShortDtoOut initiator;
+    private UserShortDtoOut initiator;
     @NotNull
-    Location location;
+    private Location location;
     @NotNull
-    Boolean paid;
-    Integer participantLimit;
-    String publishedOn;
-    Boolean requestModeration;
-    String state;
+    private Boolean paid;
+    private Integer participantLimit;
+    private String publishedOn;
+    private Boolean requestModeration;
+    private String state;
     @NotBlank
-    String title;
-    Long views;
+    private String title;
+    private Long views;
 }

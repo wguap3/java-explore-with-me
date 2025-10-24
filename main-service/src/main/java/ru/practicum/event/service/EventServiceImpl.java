@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.categories.dto.CategoryDtoOut;
+import ru.practicum.categories.service.CategoryService;
 import ru.practicum.dto.ViewStatsDto;
 import ru.practicum.enums.EveState;
 import ru.practicum.enums.SortMode;
@@ -22,6 +24,8 @@ import ru.practicum.exception.ForbiddenException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.participation.repository.ParticipationRepository;
 import ru.practicum.stats.StatsService;
+import ru.practicum.user.dto.UserShortDtoOut;
+import ru.practicum.user.service.UserService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -37,6 +41,8 @@ public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
     private final StatsService statsService;
+    private final CategoryService categoryService;
+    private final UserService userService;
     private final ParticipationRepository participationRepository;
 
     @Transactional
@@ -45,7 +51,14 @@ public class EventServiceImpl implements EventService {
         Event event = eventMapper.mapEventDtoInToEvent(eventDtoIn);
         checkValidTime(event.getEventDate(), 2, "Дата и время на которые намечено событие не может быть раньше, чем 2 часа от текущего момента");
         event.setInitiator(userId);
-        return eventMapper.mapEventToEventDtoOut(eventRepository.save(event));
+        event.setCreatedOn(LocalDateTime.now());
+
+        Event savedEvent = eventRepository.save(event);
+
+        CategoryDtoOut category = categoryService.getCategory(savedEvent.getCategory());
+        UserShortDtoOut initiator = userService.getUser(savedEvent.getInitiator());
+        Long confirmedRequests = 0L;
+        return eventMapper.mapEventToEventDtoOut(savedEvent, category, initiator, confirmedRequests);
     }
 
     @Override
@@ -74,7 +87,16 @@ public class EventServiceImpl implements EventService {
         return events.stream()
                 .map(event -> {
                     Long views = viewsMap.getOrDefault("/events/" + event.getId(), 0L);
-                    return eventMapper.mapEventToEventShortDtoOut(event, views);
+                    CategoryDtoOut category = categoryService.getCategory(event.getCategory());
+                    UserShortDtoOut initiator = userService.getUser(event.getInitiator());
+                    Long confirmedRequests = participationRepository.countByEventIdAndConfirmed(event.getId());
+                    return eventMapper.mapEventToEventShortDtoOut(
+                            event,
+                            category,
+                            initiator,
+                            confirmedRequests,
+                            views
+                    );
                 })
                 .toList();
     }
@@ -83,8 +105,17 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventDtoOut getFullEvent(Long userId, Long eventId) {
         checkEvent(eventId);
-        return eventMapper.mapEventToEventDtoOut(eventRepository.findByIdAndInitiator(eventId, userId).orElseThrow(() -> new BadRequestException("Это событие не добавлено выбранным пользователем!")));
+
+        Event event = eventRepository.findByIdAndInitiator(eventId, userId)
+                .orElseThrow(() -> new BadRequestException("Это событие не добавлено выбранным пользователем!"));
+
+        CategoryDtoOut category = categoryService.getCategory(event.getCategory());
+        UserShortDtoOut initiator = userService.getUser(event.getInitiator());
+        Long confirmedRequests = participationRepository.countByEventIdAndConfirmed(event.getId());
+
+        return eventMapper.mapEventToEventDtoOut(event, category, initiator, confirmedRequests);
     }
+
 
     @Transactional
     @Override
@@ -108,7 +139,12 @@ public class EventServiceImpl implements EventService {
         } else if (eventDtoIn.getStateAction() != null && eventDtoIn.getStateAction().equals(StateAction.SEND_TO_REVIEW)) {
             event.setState(EveState.PENDING);
         }
-        return eventMapper.mapEventToEventDtoOut(eventRepository.save(event));
+        Event savedEvent = eventRepository.save(event);
+
+        CategoryDtoOut category = categoryService.getCategory(savedEvent.getCategory());
+        UserShortDtoOut initiator = userService.getUser(savedEvent.getInitiator());
+        Long confirmedRequests = participationRepository.countByEventIdAndConfirmed(savedEvent.getId());
+        return eventMapper.mapEventToEventDtoOut(savedEvent, category, initiator, confirmedRequests);
     }
 
     @Override
@@ -172,11 +208,22 @@ public class EventServiceImpl implements EventService {
         }
 
         List<EventShortDtoOut> result = events.stream()
-                .map(event -> eventMapper.mapEventToEventShortDtoOut(
-                        event,
-                        finalViewsMap.getOrDefault("/events/" + event.getId(), 0L)
-                ))
+                .map(event -> {
+                    CategoryDtoOut category = categoryService.getCategory(event.getCategory());
+                    UserShortDtoOut initiator = userService.getUser(event.getInitiator());
+                    Long confirmedRequests = participationRepository.countByEventIdAndConfirmed(event.getId());
+                    Long views = finalViewsMap.getOrDefault("/events/" + event.getId(), 0L);
+
+                    return eventMapper.mapEventToEventShortDtoOut(
+                            event,
+                            category,
+                            initiator,
+                            confirmedRequests,
+                            views
+                    );
+                })
                 .toList();
+
 
         SortMode sortMode = SortMode.fromString(sort);
         if (sortMode == SortMode.VIEWS) {
@@ -200,7 +247,16 @@ public class EventServiceImpl implements EventService {
     public EventDtoOut getPublicEventById(Long eventId, HttpServletRequest request) {
         Event event = eventRepository.getPublicEventById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
-        EventDtoOut eventDtoOut = eventMapper.mapEventToEventDtoOut(event);
+        CategoryDtoOut category = categoryService.getCategory(event.getCategory());
+        UserShortDtoOut initiator = userService.getUser(event.getInitiator());
+        Long confirmedRequests = participationRepository.countByEventIdAndConfirmed(event.getId());
+
+        EventDtoOut eventDtoOut = eventMapper.mapEventToEventDtoOut(
+                event,
+                category,
+                initiator,
+                confirmedRequests
+        );
         try {
             statsService.sendHitId(
                     eventId,
@@ -233,7 +289,6 @@ public class EventServiceImpl implements EventService {
         if (users != null) {
             ids = List.of(users);
         }
-
         List<Long> nextIds = List.of();
         if (categories != null && !ids.isEmpty()) {
             nextIds = eventRepository.getAdminEventsByIdsAndCategory(ids, categories).stream().map(Event::getId).toList();
@@ -289,7 +344,20 @@ public class EventServiceImpl implements EventService {
                 events = eventRepository.getAdminEventInIds(stepThreeIds, from, size);
             }
         }
-        return events.stream().map(eventMapper::mapEventToEventDtoOut).toList();
+        return events.stream()
+                .map(event -> {
+                    CategoryDtoOut category = categoryService.getCategory(event.getCategory());
+                    UserShortDtoOut initiator = userService.getUser(event.getInitiator());
+                    Long confirmedRequests = participationRepository.countByEventIdAndConfirmed(event.getId());
+
+                    return eventMapper.mapEventToEventDtoOut(
+                            event,
+                            category,
+                            initiator,
+                            confirmedRequests
+                    );
+                })
+                .toList();
     }
 
 
@@ -312,7 +380,13 @@ public class EventServiceImpl implements EventService {
         } else if (eventDtoIn.getStateAction() != null && eventDtoIn.getStateAction().equals(StateAction.REJECT_EVENT)) {
             event.setState(EveState.CANCELED);
         }
-        return eventMapper.mapEventToEventDtoOut(eventRepository.save(event));
+        Event savedEvent = eventRepository.save(event);
+
+        CategoryDtoOut category = categoryService.getCategory(savedEvent.getCategory());
+        UserShortDtoOut initiator = userService.getUser(savedEvent.getInitiator());
+        Long confirmedRequests = participationRepository.countByEventIdAndConfirmed(savedEvent.getId());
+
+        return eventMapper.mapEventToEventDtoOut(savedEvent, category, initiator, confirmedRequests);
     }
 
     @Override
@@ -337,8 +411,18 @@ public class EventServiceImpl implements EventService {
 
         return events.stream()
                 .map(event -> {
+                    CategoryDtoOut category = categoryService.getCategory(event.getCategory());
+                    UserShortDtoOut initiator = userService.getUser(event.getInitiator());
+                    Long confirmedRequests = participationRepository.countByEventIdAndConfirmed(event.getId());
                     Long views = viewsMap.getOrDefault("/events/" + event.getId(), 0L);
-                    return eventMapper.mapEventToEventShortDtoOut(event, views);
+
+                    return eventMapper.mapEventToEventShortDtoOut(
+                            event,
+                            category,
+                            initiator,
+                            confirmedRequests,
+                            views
+                    );
                 })
                 .sorted(Comparator.comparing(EventShortDtoOut::getViews, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .toList();
@@ -359,6 +443,29 @@ public class EventServiceImpl implements EventService {
     public Event getEvent(Long eventId) {
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+    }
+
+    @Override
+    public EventShortDtoOut buildEventShortDtoOut(Event event, Long views) {
+        CategoryDtoOut category = categoryService.getCategory(event.getCategory());
+
+        UserShortDtoOut initiator = userService.getUser(event.getInitiator());
+
+        Long confirmedRequests = participationRepository.countByEventIdAndConfirmed(event.getId());
+
+        if (views == null) {
+            try {
+                LocalDateTime startTime = event.getCreatedOn();
+                LocalDateTime endTime = LocalDateTime.now();
+                List<String> uris = Collections.singletonList("/events/" + event.getId());
+
+                List<ViewStatsDto> stats = statsService.getStats(startTime, endTime, uris, true);
+                views = stats.isEmpty() ? 0L : stats.get(0).getHits();
+            } catch (Exception e) {
+                views = 0L;
+            }
+        }
+        return eventMapper.mapEventToEventShortDtoOut(event, category, initiator, confirmedRequests, views);
     }
 
     private LocalDateTime parseDate(String date) {

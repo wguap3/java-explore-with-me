@@ -14,22 +14,21 @@ import ru.practicum.location.Location;
 public class EventDtoIn {
     @NotBlank
     @Length(min = 20, max = 2000)
-    String annotation;
+    private String annotation;
     @NotNull
-    Long category;
+    private Long category;
     @NotBlank
     @Length(min = 20, max = 7000)
-    String description;
+    private String description;
     @NotBlank
-    String eventDate;
+    private String eventDate;
     @Valid
-    Location location;
-    Boolean paid;
+    private Location location;
+    private Boolean paid;
     @PositiveOrZero
-    Integer participantLimit;
-    Boolean requestModeration;
-    String stateAction;
+    private Integer participantLimit;
+    private Boolean requestModeration;
     @NotBlank
     @Length(min = 3, max = 120)
-    String title;
+    private String title;
 }

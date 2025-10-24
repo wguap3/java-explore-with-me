@@ -1,7 +1,6 @@
 package ru.practicum.compilations.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.compilations.dto.CompilationsDtoIn;
@@ -11,8 +10,13 @@ import ru.practicum.compilations.mapper.CompilationsMapper;
 import ru.practicum.compilations.model.Compilations;
 import ru.practicum.compilations.repository.CompilationsCustomRepository;
 import ru.practicum.compilations.repository.CompilationsRepository;
+import ru.practicum.event.dto.EventShortDtoOut;
+import ru.practicum.event.model.Event;
+import ru.practicum.event.repository.EventRepository;
+import ru.practicum.event.service.EventService;
 import ru.practicum.exception.NotFoundException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -20,7 +24,8 @@ import java.util.List;
 public class CompilationsServiceImpl implements CompilationsService {
     private final CompilationsRepository compilationsRepository;
     private final CompilationsMapper compilationsMapper;
-    private final JdbcTemplate jdbcTemplate;
+    private final EventRepository eventRepository;
+    private final EventService eventService;
     private final CompilationsCustomRepository compilationsCustomRepository;
 
     @Override
@@ -30,7 +35,14 @@ public class CompilationsServiceImpl implements CompilationsService {
         if (compilationsDtoIn.getEvents() != null && !compilationsDtoIn.getEvents().isEmpty()) {
             compilationsCustomRepository.saveCompilationEventsBatch(compilations.getId(), compilationsDtoIn.getEvents());
         }
-        return compilationsMapper.mapCompilationsToCompilationsDtoOut(compilations);
+        List<EventShortDtoOut> events = new ArrayList<>();
+        if (compilationsDtoIn.getEvents() != null && !compilationsDtoIn.getEvents().isEmpty()) {
+            List<Event> eventEntities = eventRepository.findAllById(compilationsDtoIn.getEvents());
+            events = eventEntities.stream()
+                    .map(event -> eventService.buildEventShortDtoOut(event, 0L))
+                    .toList();
+        }
+        return compilationsMapper.mapCompilationsToCompilationsDtoOut(compilations, events);
     }
 
     @Override
@@ -45,10 +57,7 @@ public class CompilationsServiceImpl implements CompilationsService {
     public CompilationsDtoOut updateCompilation(Long compId, CompilationsUpdateDtoIn compilationsDtoIn) {
         Compilations compilations = compilationsRepository.findById(compId).orElseThrow(() -> new NotFoundException("Compilation with id=" + compId + " was not found"));
         if (compilationsDtoIn.getEvents() != null) {
-            jdbcTemplate.update("DELETE FROM compilations_events AS ce WHERE ce.compilation_id = ?", compilations.getId());
-            for (int i = 0; i < compilationsDtoIn.getEvents().size(); i++) {
-                jdbcTemplate.update("INSERT INTO compilations_events (compilation_id, event_id) VALUES (?, ?)", compilations.getId(), compilationsDtoIn.getEvents().get(i));
-            }
+            compilationsCustomRepository.updateCompilationEvents(compilations.getId(), compilationsDtoIn.getEvents());
         }
         if (compilationsDtoIn.getPinned() != null) {
             compilations.setPinned(compilationsDtoIn.getPinned());
@@ -56,22 +65,55 @@ public class CompilationsServiceImpl implements CompilationsService {
         if (compilationsDtoIn.getTitle() != null) {
             compilations.setTitle(compilationsDtoIn.getTitle());
         }
-        return compilationsMapper.mapCompilationsToCompilationsDtoOut(compilationsRepository.save(compilations));
+        compilations = compilationsRepository.save(compilations);
+
+        List<Long> eventIds = compilationsCustomRepository.getEventIdsByCompilationId(compId);
+        List<Event> eventEntities = eventRepository.findAllById(eventIds);
+
+        List<EventShortDtoOut> events = eventEntities.stream()
+                .map(event -> eventService.buildEventShortDtoOut(event, null)) // views подтянутся внутри метода
+                .toList();
+
+        return compilationsMapper.mapCompilationsToCompilationsDtoOut(compilations, events);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<CompilationsDtoOut> getPublicCompilations(Boolean pinned, Integer from, Integer size) {
+        List<Compilations> compilations;
         if (pinned != null) {
-            return compilationsRepository.getPublicCompByPinned(pinned, from, size).stream().map(compilationsMapper::mapCompilationsToCompilationsDtoOut).toList();
+            compilations = compilationsRepository.getPublicCompByPinned(pinned, from, size);
         } else {
-            return compilationsRepository.getPublicComp(from, size).stream().map(compilationsMapper::mapCompilationsToCompilationsDtoOut).toList();
+            compilations = compilationsRepository.getPublicComp(from, size);
         }
+
+        return compilations.stream()
+                .map(comp -> {
+                    List<Long> eventIds = compilationsCustomRepository.getEventIdsByCompilationId(comp.getId());
+                    List<Event> eventEntities = eventRepository.findAllById(eventIds);
+                    List<EventShortDtoOut> events = eventEntities.stream()
+                            .map(event -> eventService.buildEventShortDtoOut(event, null)) // views подтянутся внутри метода
+                            .toList();
+                    return compilationsMapper.mapCompilationsToCompilationsDtoOut(comp, events);
+                })
+                .toList();
     }
 
-    @Override
+
     @Transactional(readOnly = true)
     public CompilationsDtoOut getPublicCompilationsById(Long compId) {
-        return compilationsMapper.mapCompilationsToCompilationsDtoOut(compilationsRepository.findById(compId).orElseThrow(() -> new NotFoundException("Compilation with id=" + compId + " was not found")));
+        Compilations comp = compilationsRepository.findById(compId)
+                .orElseThrow(() -> new NotFoundException("Compilation with id=" + compId + " was not found"));
+        List<Long> eventIds = compilationsCustomRepository.getEventIdsByCompilationId(compId);
+
+        List<Event> eventEntities = eventRepository.findAllById(eventIds);
+
+        List<EventShortDtoOut> events = eventEntities.stream()
+                .map(event -> eventService.buildEventShortDtoOut(event, null)) // просмотры подтянутся внутри метода
+                .toList();
+
+        return compilationsMapper.mapCompilationsToCompilationsDtoOut(comp, events);
     }
+
+
 }

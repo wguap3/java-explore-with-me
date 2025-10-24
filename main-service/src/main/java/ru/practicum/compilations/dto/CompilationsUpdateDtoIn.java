@@ -9,8 +9,8 @@ import java.util.List;
 @Getter
 @Setter
 public class CompilationsUpdateDtoIn {
-    List<Long> events;
-    Boolean pinned;
+    private List<Long> events;
+    private Boolean pinned;
     @Size(max = 50)
-    String title;
+    private String title;
 }

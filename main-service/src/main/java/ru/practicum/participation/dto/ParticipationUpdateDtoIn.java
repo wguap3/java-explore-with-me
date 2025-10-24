@@ -9,6 +9,6 @@ import java.util.List;
 @Getter
 @Setter
 public class ParticipationUpdateDtoIn {
-    List<Long> requestIds;
-    UpdateState status;
+    private List<Long> requestIds;
+    private UpdateState status;
 }

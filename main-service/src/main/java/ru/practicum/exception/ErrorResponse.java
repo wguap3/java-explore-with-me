@@ -6,8 +6,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class ErrorResponse {
-    String status;
-    String reason;
-    String message;
-    String timestamp;
+    private String status;
+    private String reason;
+    private String message;
+    private String timestamp;
 }

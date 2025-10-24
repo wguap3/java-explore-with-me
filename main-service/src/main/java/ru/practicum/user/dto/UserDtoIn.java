@@ -12,8 +12,8 @@ public class UserDtoIn {
     @Email
     @NotBlank
     @Length(min = 6, max = 254)
-    String email;
+    private String email;
     @NotBlank
     @Length(min = 2, max = 250)
-    String name;
+    private String name;
 }

@@ -12,6 +12,7 @@ public class Main {
         SpringApplication.run(Main.class, args);
     }
 
+    // без него контейнер не заупскается
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();

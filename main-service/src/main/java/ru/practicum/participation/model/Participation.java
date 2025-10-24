@@ -14,12 +14,12 @@ import java.time.LocalDateTime;
 @Table(name = "participation")
 @Entity
 public class Participation {
-    LocalDateTime created = LocalDateTime.now();
-    Long event;
+    private LocalDateTime created = LocalDateTime.now();
+    private Long event;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-    Long requester;
+    private Long id;
+    private Long requester;
     @Enumerated(EnumType.STRING)
-    PartState status;
+    private PartState status;
 }

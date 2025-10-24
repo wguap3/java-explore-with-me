@@ -17,9 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 public class Compilations {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
     @NotNull
-    Boolean pinned;
+    private Boolean pinned;
     @NotBlank
-    String title;
+    private String title;
 }

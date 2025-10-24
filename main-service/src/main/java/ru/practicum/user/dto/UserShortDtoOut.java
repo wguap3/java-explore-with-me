@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 public class UserShortDtoOut {
     @NotNull
-    Long id;
+    private Long id;
     @NotBlank
-    String name;
+    private String name;
 }

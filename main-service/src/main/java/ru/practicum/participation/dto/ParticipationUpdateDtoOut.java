@@ -9,6 +9,6 @@ import java.util.List;
 @Getter
 @Setter
 public class ParticipationUpdateDtoOut {
-    List<ParticipationDtoOut> confirmedRequests = new ArrayList<>();
-    List<ParticipationDtoOut> rejectedRequests = new ArrayList<>();
+    private List<ParticipationDtoOut> confirmedRequests = new ArrayList<>();
+    private List<ParticipationDtoOut> rejectedRequests = new ArrayList<>();
 }

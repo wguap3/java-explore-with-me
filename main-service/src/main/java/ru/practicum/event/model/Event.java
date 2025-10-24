@@ -17,36 +17,36 @@ import java.time.LocalDateTime;
 @Entity
 public class Event {
     @NotBlank
-    String annotation;
+    private String annotation;
     @NotNull
-    Long category;
+    private Long category;
     @Column(name = "created_on")
-    LocalDateTime createdOn = LocalDateTime.now();
-    String description;
+    private LocalDateTime createdOn = LocalDateTime.now();
+    private String description;
     @NotNull
     @Column(name = "event_date")
-    LocalDateTime eventDate;
+    private LocalDateTime eventDate;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
     @NotNull
-    Long initiator;
+    private Long initiator;
     @NotNull
     @Column(name = "location_lat")
-    Float locationLat;
+    private Float locationLat;
     @NotNull
     @Column(name = "location_lon")
-    Float locationLon;
+    private Float locationLon;
     @NotNull
-    Boolean paid;
+    private Boolean paid;
     @Column(name = "participant_limit")
-    Integer participantLimit;
+    private Integer participantLimit;
     @Column(name = "published_on")
-    LocalDateTime publishedOn;
+    private LocalDateTime publishedOn;
     @Column(name = "request_moderation")
-    Boolean requestModeration;
+    private Boolean requestModeration;
     @Enumerated(EnumType.STRING)
-    EveState state;
+    private EveState state;
     @NotBlank
-    String title;
+    private String title;
 }

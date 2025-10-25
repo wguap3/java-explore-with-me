@@ -1,20 +1,59 @@
+
 services:
+  postgres-main:
+    image: postgres:15
+    container_name: postgres-main
+    environment:
+      POSTGRES_DB: main_db
+      POSTGRES_USER: main_user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432" # можно локально пробросить другой порт
+    networks:
+      - explore-net
+
+  postgres-stats:
+    image: postgres:15
+    container_name: postgres-stats
+    environment:
+      POSTGRES_DB: stats_db
+      POSTGRES_USER: stats_user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5434:5432"
+    networks:
+      - explore-net
+
   stats-server:
     build: ./stats-service/stats-server
     ports:
       - "9090:9090"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/explore
-      SPRING_DATASOURCE_USERNAME: explore_user
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-stats:5432/stats_db
+      SPRING_DATASOURCE_USERNAME: stats_user
       SPRING_DATASOURCE_PASSWORD: password
     depends_on:
-      - postgres-db
+      - postgres-stats
+    networks:
+      - explore-net
 
-  postgres-db:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: explore
-      POSTGRES_USER: explore_user
-      POSTGRES_PASSWORD: password
+  main-service:
+    build: ./main-service
     ports:
-      - "5432:5432"
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-main:5432/main_db
+      SPRING_DATASOURCE_USERNAME: main_user
+      SPRING_DATASOURCE_PASSWORD: password
+      SERVER_URL: http://main-service:8080
+      GATEWAY_URL: http://stats-server:9090
+      client.url=${GATEWAY_URL}:
+    depends_on:
+      - postgres-main
+      - stats-server
+    networks:
+      - explore-net
+
+networks:
+  explore-net:
+    driver: bridge

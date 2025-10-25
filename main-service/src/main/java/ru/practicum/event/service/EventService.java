@@ -1,0 +1,33 @@
+package ru.practicum.event.service;
+
+
+import jakarta.servlet.http.HttpServletRequest;
+import ru.practicum.event.dto.EventDtoIn;
+import ru.practicum.event.dto.EventDtoOut;
+import ru.practicum.event.dto.EventShortDtoOut;
+import ru.practicum.event.dto.EventUpdateDtoIn;
+import ru.practicum.event.model.Event;
+
+import java.util.List;
+
+public interface EventService {
+    EventDtoOut addEvent(Long userId, EventDtoIn eventDtoIn, HttpServletRequest request);
+
+    List<EventShortDtoOut> getEvents(Long userId, Integer from, Integer size);
+
+    EventDtoOut getFullEvent(Long userId, Long eventId);
+
+    EventDtoOut updateEvent(Long userId, Long eventId, EventUpdateDtoIn eventDtoIn);
+
+    List<EventShortDtoOut> getPublicEvent(String text, Long[] categories, Boolean paid, String rangeStart, String rangeEnd, Boolean onlyAvailable, String sort, Integer from, Integer size, HttpServletRequest request);
+
+    EventDtoOut getPublicEventById(Long eventId, HttpServletRequest request);
+
+    List<EventDtoOut> getAdminEvent(Long[] users, String[] states, Long[] categories, String rangeStart, String rangeEnd, Integer from, Integer size);
+
+    EventDtoOut updateAdminEvent(Long eventId, EventUpdateDtoIn eventDtoIn);
+
+    List<EventShortDtoOut> getCompilationsEvents(List<Long> eventIds);
+
+    EventShortDtoOut buildEventShortDtoOut(Event event, Long views);
+}

@@ -13,6 +13,7 @@
 	<name>Explore With Me</name>
 	<modules>
 		<module>stats-service</module>
+		<module>main-service</module>
 	</modules>
 
 	<groupId>ru.practicum</groupId>
@@ -188,6 +189,11 @@
 					<plugin>
 						<groupId>com.github.spotbugs</groupId>
 						<artifactId>spotbugs-maven-plugin</artifactId>
+						<configuration>
+							<effort>Max</effort>
+							<threshold>High</threshold>
+							<failOnError>false</failOnError>
+						</configuration>
 					</plugin>
 				</plugins>
 			</reporting>

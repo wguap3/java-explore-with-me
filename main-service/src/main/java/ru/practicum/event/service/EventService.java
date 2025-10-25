@@ -30,4 +30,6 @@ public interface EventService {
     List<EventShortDtoOut> getCompilationsEvents(List<Long> eventIds);
 
     EventShortDtoOut buildEventShortDtoOut(Event event, Long views);
+
+    Event getPublishEventById(Long eventId);
 }

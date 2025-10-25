@@ -104,4 +104,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> getCompilationsEvents(List<Long> ids);
 
     List<Event> findAllByCategory(Long catId);
+
+    @Query("select e from Event as e where e.id IN ?1 AND e.state = 'PUBLISHED'")
+    Optional<Event> getPublishEventById(Long eventId);
 }

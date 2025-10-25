@@ -468,6 +468,11 @@ public class EventServiceImpl implements EventService {
         return eventMapper.mapEventToEventShortDtoOut(event, category, initiator, confirmedRequests, views);
     }
 
+    @Override
+    public Event getPublishEventById(Long eventId) {
+        return eventRepository.getPublishEventById(eventId).orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+    }
+
     private LocalDateTime parseDate(String date) {
         return LocalDateTime.parse(date.replace("\"", ""), FORMATTER);
     }

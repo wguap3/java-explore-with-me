@@ -2,6 +2,7 @@ package ru.practicum.comments.service;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.categories.dto.CategoryDtoOut;
@@ -29,6 +30,7 @@ import ru.practicum.user.service.UserService;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -123,6 +125,7 @@ public class CommentServiceImpl implements CommentService {
                         views = stats.get(0).getHits();
                     }
                 } catch (Exception e) {
+                    log.error("Ошибка получения статистики просмотров для события id={}", event.getId(), e);
                 }
 
                 eventShortDtoOut = eventMapper.mapEventToEventShortDtoOut(event, category, initiator, confirmedRequests, views);
@@ -152,6 +155,7 @@ public class CommentServiceImpl implements CommentService {
                 views = stats.get(0).getHits();
             }
         } catch (Exception e) {
+            log.error("Ошибка получения статистики просмотров для события id={}", event.getId(), e);
         }
         EventShortDtoOut eventShortDtoOut = eventMapper.mapEventToEventShortDtoOut(event, category, initiator, confirmedRequests, views);
 
@@ -202,6 +206,7 @@ public class CommentServiceImpl implements CommentService {
                     views = stats.get(0).getHits();
                 }
             } catch (Exception e) {
+                log.error("Ошибка получения статистики просмотров для события id={}", event.getId(), e);
             }
 
             eventShortDtoOut = eventMapper.mapEventToEventShortDtoOut(event, category, initiator, confirmedRequests, views);
@@ -230,7 +235,7 @@ public class CommentServiceImpl implements CommentService {
                 views = stats.get(0).getHits();
             }
         } catch (Exception e) {
-
+            log.error("Ошибка получения статистики просмотров для события id={}", event.getId(), e);
         }
         EventShortDtoOut eventShortDtoOut = eventMapper.mapEventToEventShortDtoOut(event, category, initiator, confirmedRequests, views);
 
